@@ -1,33 +1,57 @@
 package com.heima;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heima.redis.pojo.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.util.Map;
 
 @SpringBootTest
-class RedisDemoApplicationTests {
+class RedisStringTests {
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Test
     void testString() {
         // 保存数据
-        redisTemplate.opsForValue().set("name", "虎哥");
+        stringRedisTemplate.opsForValue().set("name", "虎哥");
         // 获取数据
-        Object name = redisTemplate.opsForValue().get("name");
+        Object name = stringRedisTemplate.opsForValue().get("name");
         System.out.println("name = " + name);
     }
 
+    // 创建JSON序列化工具
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     @Test
-    void testSaveUser(){
+    void testSaveUser() throws JsonProcessingException {
+        // 创建User对象
+        User user = new User("虎哥",21);
+        //手动序列化
+        String json = mapper.writeValueAsString(user);
+
         //写入数据
-        redisTemplate.opsForValue().set("user:100", new User("虎哥",21));
+        stringRedisTemplate.opsForValue().set("user:200",json);
         //获取数据
-        User user = (User) redisTemplate.opsForValue().get("user:100");
-        System.out.println("user = " + user);
+        String  jsonUser =  stringRedisTemplate.opsForValue().get("user:200");
+        //反序列化
+        User user1 = mapper.readValue(jsonUser, User.class);
+        System.out.println("user = " + user1);
+    }
+
+    @Test
+    void testHash(){
+        stringRedisTemplate.opsForHash().put("user:400","name","虎哥");
+        stringRedisTemplate.opsForHash().put("user:400","age","21");
+
+        Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries("user:400");
+        System.out.println("entries = " + entries);
     }
 
 }
