@@ -351,7 +351,7 @@ public Result login(LoginFormDTO loginForm, HttpSession session) {
         // 2.如果不符合，返回错误信息
         return Result.fail("手机号格式错误！");
     }
-    // 3.从redis获取验证码并校验
+    //TODO 3.从redis获取验证码并校验
     String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
     String code = loginForm.getCode();
     if (cacheCode == null || !cacheCode.equals(code)) {
@@ -368,25 +368,45 @@ public Result login(LoginFormDTO loginForm, HttpSession session) {
         user = createUserWithPhone(phone);
     }
 
-    // 7.保存用户信息到 redis中
-    // 7.1.随机生成token，作为登录令牌
+    //TODO 7.保存用户信息到 redis中
+    //TODO 7.1.随机生成token，作为登录令牌
     String token = UUID.randomUUID().toString(true);
-    // 7.2.将User对象转为HashMap存储
+    //TODO 7.2.将User对象转为HashMap存储
     UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
     Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),
             CopyOptions.create()
                     .setIgnoreNullValue(true)
                     .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
-    // 7.3.存储
+    //TODO 7.3.存储
     String tokenKey = LOGIN_USER_KEY + token;
     stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
-    // 7.4.设置token有效期
+    //TODO 7.4.设置token有效期
     stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
 
     // 8.返回token
     return Result.ok(token);
 }
 ```
+
+
+
+- **选择合适数据结构，简单数据可以用String，复杂数据可以用hash类型存储**
+- **选择合适的Key，考虑唯一性，考虑是否方便携带，设置过期时间，避免没有访问到的数据在Redis中存储过久**
+- **选择合适的存储粒度，选择重要关键数据进行存储，节省存储空间**
+
+- **为什么LoginInterceptor中不能直接依赖注入Redis操作对象StringRedisTemplate，而是要通过构造形参的方式注入？**
+  - **MvcConfig 先被Spring管理，其中的 addInterceptors() 方法中通过 new 手动创建拦截器LoginInterceptor实例时,这个实例不受Spring管理,因此无法使用依赖注入，因此，拦截器LoginInterceptor中不能使用依赖注入的形式注入StringRedisTemplate，必须通过构造形参的方式，从外部（MvcConfig，因为MvcConfig中使用了LoginInterceptor）传入Redis操作对象，这样拦截器才能访问到Redis中的用户信息**
+  - **通过 new 关键字创建的 LoginInterceptor 实例不受Spring容器管理**
+- **为什么选择构造器传参而不是让拦截器成为Bean？**
+  - **避免循环依赖**
+    **拦截器可能在某些Bean初始化之前就需要**
+    **如果拦截器本身是Bean且依赖其他Bean，可能导致循环依赖**
+  - **简单直接**
+    **拦截器通常逻辑简单，不需要复杂的依赖注入**
+    **通过构造器明确传递所需依赖，更清晰**
+  - **生命周期控制**
+    **手动 new 可以完全控制拦截器的创建时机**
+    **不依赖Spring的Bean生命周期管理**
 
 ### 1.9 解决状态登录刷新问题
 
@@ -467,6 +487,8 @@ public class LoginInterceptor implements HandlerInterceptor {
     }
 }
 ```
+
+
 
 
 
