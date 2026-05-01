@@ -25,10 +25,12 @@ public class CacheClient {
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
+    // 将任意Java对象序列化为json并存储在string类型的key中，并且可以设置TTL过期时间
     public void set(String key, Object value, Long time, TimeUnit unit){
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
     }
 
+    //  将任意Java对象序列化为json并存储在string类型的key中，并且可以设置逻辑过期时间，用于处理缓存击穿问题
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit){
         //设置逻辑过期
         RedisData redisData = new RedisData();
@@ -38,6 +40,7 @@ public class CacheClient {
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
 
+    //根据指定的key查询缓存，并反序列化为指定类型，利用缓存空值的方式解决缓存穿透问题
     public <R,ID> R queryWithPassThrough(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit){
         String key = keyPrefix + id;
@@ -48,7 +51,7 @@ public class CacheClient {
             //3.存在，直接返回
             return JSONUtil.toBean(json, type);
         }
-        //判断命中是否是空值
+        //缓存命中且为空字符串
         if (json != null) {
             //返回一个错误信息
             return null;
@@ -70,6 +73,7 @@ public class CacheClient {
 
     private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
+    //根据指定的key查询缓存，并反序列化为指定类型，需要利用逻辑过期解决缓存击穿问题
     public <R, ID> R queryWithLogicalExpire(
             String keyPrefix,ID id, Class<R> type,
             Function<ID, R> dbFallback, Long time, TimeUnit unit){
@@ -111,7 +115,6 @@ public class CacheClient {
                     //释放锁
                     unLock(lockKey);
                 }
-
             });
         }
 

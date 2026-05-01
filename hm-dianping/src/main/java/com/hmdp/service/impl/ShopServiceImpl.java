@@ -46,20 +46,20 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      */
     @Override
     public Result queryById(Long id) {
-        //缓存穿透
+        //空值解决缓存穿透
 //        Shop shop = queryWithPassThrough(id);
-        /*Shop shop = cacheClient.queryWithPassThrough(RedisConstants.CACHE_SHOP_KEY,
+        Shop shop = cacheClient.queryWithPassThrough(RedisConstants.CACHE_SHOP_KEY,
                 id, Shop.class, this::getById,
-                RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);*/
+                RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
 
         //互斥锁解决缓存击穿
 //        Shop shop = queryWithMutex(id);
 
         //逻辑过期解决缓存击穿
         //Shop shop = queryWithLogicalExpire(id);
-        Shop shop = cacheClient.queryWithLogicalExpire(
+        /*Shop shop = cacheClient.queryWithLogicalExpire(
                 RedisConstants.CACHE_SHOP_KEY,id,Shop.class,this::getById,
-                RedisConstants.CACHE_SHOP_TTL,TimeUnit.MINUTES);
+                RedisConstants.CACHE_SHOP_TTL,TimeUnit.MINUTES);*/
 
         if (shop == null) {
             return Result.fail("店铺不存在");
@@ -70,8 +70,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
 
 
-    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+    //private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
+    //逻辑过期解决缓存击穿
     /*public Shop queryWithLogicalExpire(Long id){
         String key = RedisConstants.CACHE_SHOP_KEY + id;
         //1.从Redis查询商铺缓存
@@ -118,7 +119,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }*/
 
 
-    //缓存击穿
+    //互斥锁解决缓存击穿
     /*public Shop queryWithMutex(Long id){
         String key = RedisConstants.CACHE_SHOP_KEY + id;
         //1.从Redis查询商铺缓存
@@ -128,7 +129,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             //3.存在，直接返回
             return JSONUtil.toBean(shopJson, Shop.class);
         }
-        //判断命中是否是空值
+        //命中且为空字符串
         if (shopJson != null) {
             //返回一个错误信息
             return null;
@@ -171,7 +172,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         return shop;
     }*/
 
-    //缓存穿透
+    //空值解决缓存穿透
     /*public Shop queryWithPassThrough(Long id){
         String key = RedisConstants.CACHE_SHOP_KEY + id;
         //1.从Redis查询商铺缓存
@@ -181,7 +182,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             //3.存在，直接返回
             return JSONUtil.toBean(shopJson, Shop.class);
         }
-        //判断命中是否是空值
+        //判断命中且为空字符串
         if (shopJson != null) {
             //返回一个错误信息
             return null;
@@ -195,7 +196,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             return null;
         }
         //6.存在，写入Redis
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr( shop),RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop),RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
         //7.返回
         return shop;
     }*/
