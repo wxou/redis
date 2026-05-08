@@ -3426,7 +3426,7 @@ public Result saveBlog(Blog blog) {
 
 2、我们需要找到与上一次查询相同的查询个数作为偏移量，下次查询时，跳过这些查询过的数据，拿到我们需要的数据
 
-综上：我们的请求参数中就需要携带 lastId：上一次查询的最小时间戳 和偏移量这两个参数。
+综上：我们的请求参数中就需要携带 lastId：上一次查询的**最小时间戳** 和**偏移量**这两个参数。
 
 这两个参数第一次会由前端来指定，以后的查询就根据后台结果作为条件，再次传递到后台。
 
@@ -3445,7 +3445,7 @@ public class ScrollResult {
 
 BlogController
 
-注意：RequestParam 表示接受url地址栏传参的注解，当方法上参数的名称和url地址栏不相同时，可以通过RequestParam 来进行指定
+注意：**RequestParam** 表示接受url地址栏传参的注解，当方法上参数的名称和url地址栏不相同时，可以通过RequestParam 来进行指定
 
 ```java
 @GetMapping("/of/follow")
