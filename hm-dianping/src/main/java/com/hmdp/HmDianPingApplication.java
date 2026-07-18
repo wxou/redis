@@ -7,7 +7,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 
 @EnableAspectJAutoProxy(exposeProxy = true)
-@MapperScan("com.hmdp.mapper")
+@MapperScan("com.hmdp.mapper") // mapper包下都不需要加@Mapper注解
 @SpringBootApplication
 public class HmDianPingApplication {
 
