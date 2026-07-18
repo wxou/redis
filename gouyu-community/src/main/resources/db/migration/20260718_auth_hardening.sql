@@ -1,5 +1,4 @@
 -- Existing GouYu databases can apply this non-destructive authentication migration.
-USE `gouyu`;
 
 CREATE TABLE IF NOT EXISTS `gy_auth_audit_log`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',

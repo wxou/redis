@@ -56,6 +56,7 @@
 | `GOUYU_AUTH_CODE_IP_HOURLY_LIMIT` | `30` | 同 IP 一小时发送上限 |
 | `GOUYU_AUTH_LOGIN_IP_LIMIT` | `30` | 登录限流窗口内同 IP 请求上限 |
 | `GOUYU_AUTH_AUDIT_RETENTION_DAYS` | `180` | 认证审计日志保留天数 |
+| `GOUYU_AUTH_INITIALIZE_AUDIT_SCHEMA` | `true` | 启动时非破坏性创建缺失的认证审计表 |
 
 PowerShell 示例：
 
@@ -79,7 +80,7 @@ mysql -h 127.0.0.1 -u root -p < src/main/resources/db/gouyu.sql
 已有数据库升级认证能力时，无需重新导入演示数据，可单独执行：
 
 ```powershell
-mysql -h 127.0.0.1 -u root -p < src/main/resources/db/migration/20260718_auth_hardening.sql
+mysql -h 127.0.0.1 -u root -p gouyu < src/main/resources/db/migration/20260718_auth_hardening.sql
 ```
 
 ## 启动
@@ -123,4 +124,4 @@ deploy\nginx\nginx.exe -t -p "<项目绝对路径>\deploy\nginx\" -c conf\nginx.
 
 ## 当前演进状态
 
-项目先完成了不改变核心业务语义的等价包装，随后在保持框架、Lua 返回码、缓存 TTL、分页和锁粒度不变的前提下，修复了验证码校验、写接口鉴权、上传路径、Stream 初始化、GEO/关注一致性、资料保存和列表 N+1 等技术债。当前 32 个可调用路由已通过 42 个端到端场景；仍需生产化处理的内容见[项目总结](docs/project-summary.md)。
+项目先完成了不改变核心业务语义的等价包装，随后修复验证码校验、写接口鉴权、上传路径、Stream 初始化、GEO/关注一致性、资料保存和列表 N+1 等技术债，并补齐密码登录、双重会话期限、认证限流和审计。当前共有 35 个可调用路由；原 42 个业务场景与新增 18 项认证安全断言均已通过。仍需生产化处理的内容见[项目总结](docs/project-summary.md)。

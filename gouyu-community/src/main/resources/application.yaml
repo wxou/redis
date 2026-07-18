@@ -49,3 +49,4 @@ gouyu:
     login-account-failure-window-minutes: ${GOUYU_AUTH_LOGIN_ACCOUNT_FAILURE_WINDOW_MINUTES:15}
     login-lock-minutes: ${GOUYU_AUTH_LOGIN_LOCK_MINUTES:15}
     audit-retention-days: ${GOUYU_AUTH_AUDIT_RETENTION_DAYS:180}
+    initialize-audit-schema: ${GOUYU_AUTH_INITIALIZE_AUDIT_SCHEMA:true}

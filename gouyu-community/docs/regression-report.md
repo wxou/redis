@@ -10,16 +10,18 @@
 | --- | --- | --- |
 | 改造前后端编译基线 | 通过 | 改造前 `mvn -o -DskipTests clean compile` 成功 |
 | 构域后端编译 | 通过 | 改造后 `mvn -o -DskipTests compile` 成功 |
-| 测试源码编译 | 通过 | `mvn -DskipTests test-compile` 成功，72 个主源码、3 个测试源码 |
+| 测试源码编译 | 通过 | `mvn -DskipTests test-compile` 成功，82 个主源码、4 个测试源码 |
+| 密码编码单元测试 | 通过 | BCrypt、错误密码和历史 MD5 升级共 3 项，3 通过、0 失败 |
 | 前端内联 JavaScript 语法 | 通过 | 10 个 HTML 页面均通过 Node `new Function` 语法检查 |
 | Nginx 配置 | 通过 | `nginx -t` 返回 syntax ok / test successful |
 | 本地资源闭环 | 通过 | 46 个构域资源文件，SQL 路径均指向 `/assets` |
 | 明文基础设施口令 | 通过 | 应用配置改用 `GOUYU_*` 环境变量 |
-| MySQL 构域库 | 通过 | 本机 MySQL 8.0.45；独立 `gouyu` 库 11 张表，演示数据完整 |
+| MySQL 构域库 | 通过 | 本机 MySQL 8.0.45；独立 `gouyu` 库 11 张业务表和 1 张认证审计表 |
 | Redis 构域命名空间 | 通过 | 虚拟机 Redis 6.2.6；GEO 为 9+5 个商户，Stream/消费组已创建 |
 | 后端启动 | 通过 | Tomcat 8081 启动，Redisson 建立 24 个连接，无启动异常 |
 | 只读 API 冒烟 | 通过 | 分类 10、附近商户 5、热门动态 4、商户权益 1 |
 | Nginx 端到端代理 | 通过 | 8080 首页与 `/api/merchant/1` 返回 UTF-8 构域内容 |
+| 认证安全联调 | 通过 | 18 项断言全部通过，覆盖验证码/密码、限流、双重会话期限、失败锁定与审计 |
 
 ## 等价性约束检查
 
@@ -35,4 +37,4 @@
 
 ## 未执行项
 
-没有运行会批量写入 ID、HyperLogLog、登录会话或业务记录的完整测试集。等价验证使用编译、静态契约检查和只读 API 冒烟完成，避免污染现有共享 Redis/MySQL 数据。
+没有运行会批量写入 ID 或 HyperLogLog 的完整 Spring 测试集。本轮使用专用手机号完成认证写入联调，结束后精确删除测试成员、审计行、会话和手机号范围的 Redis Key；其他回归继续使用编译、静态契约检查与只读 API 冒烟，避免污染共享数据。

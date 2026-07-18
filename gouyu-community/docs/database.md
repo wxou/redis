@@ -36,7 +36,7 @@
 
 ## 增量迁移
 
-已有 `gouyu` 数据库可执行 `src/main/resources/db/migration/20260718_auth_hardening.sql` 创建认证审计表。该脚本不删除现有表或业务数据，可重复执行。
+应用默认在启动时复用现有数据源执行 `CREATE TABLE IF NOT EXISTS`，非破坏性补齐认证审计表。生产环境如统一由 DBA 或迁移系统管理表结构，可设置 `GOUYU_AUTH_INITIALIZE_AUDIT_SCHEMA=false`，并手工执行 `src/main/resources/db/migration/20260718_auth_hardening.sql`。该脚本不删除现有表或业务数据，可重复执行。
 
 ## 演示数据
 
