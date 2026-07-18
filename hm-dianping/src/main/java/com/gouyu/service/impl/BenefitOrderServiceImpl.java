@@ -193,7 +193,7 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
         // 获取成员
         Long memberId = MemberContext.getMember().getId();
         //获取权益记录id
-        long orderId = distributedIdGenerator.nextId("order");
+        long orderId = distributedIdGenerator.nextId("benefit-order");
 
         // 1. 执行lua脚本
         Long result = stringRedisTemplate.execute(
@@ -235,7 +235,7 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
         // 2.2 为0，有领取资格，把领取信息保存到阻塞队列中
         BenefitOrder benefitOrder = new BenefitOrder();
         // 2.2.1 权益记录id
-        long orderId = distributedIdGenerator.nextId("order");
+        long orderId = distributedIdGenerator.nextId("benefit-order");
         benefitOrder.setId(orderId);
         // 2.2.2 成员id
         benefitOrder.setMemberId(memberId);

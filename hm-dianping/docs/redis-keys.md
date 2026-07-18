@@ -16,7 +16,7 @@
 | `gy:following:{memberId}` | Set | 无固定 TTL | 成员关注集合 |
 | `gy:merchant:geo:{categoryId}` | GEO | 无固定 TTL | 分类下商户坐标 |
 | `gy:check-in:{memberId}:{yyyyMM}` | Bitmap | 无固定 TTL | 月度打卡位图 |
-| `gy:id:{business}:{yyyy:MM:dd}` | String | 无固定 TTL | 分布式 ID 日计数器 |
+| `gy:id:benefit-order:{yyyy:MM:dd}` | String | 无固定 TTL | 权益记录分布式 ID 日计数器 |
 | `gy:stream:benefit-orders` | Stream | 无固定 TTL | 权益领取消息流 |
 | `gy:lock:benefit-order:{memberId}` | Lock | 看门狗/业务释放 | 成员权益领取锁 |
 

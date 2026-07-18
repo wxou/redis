@@ -4,13 +4,13 @@
 local benefitId = ARGV[1]
 -- 1.2 成员id
 local memberId = ARGV[2]
--- 1.3 权益订单id
+-- 1.3 权益记录id
 local benefitOrderId = ARGV[3]
 
 -- 2.数据key
 -- 2.1 库存key
 local stockKey = "gy:limited-benefit:stock:" .. benefitId
--- 2.2 订单key
+-- 2.2 权益领取去重key
 local orderKey = "gy:limited-benefit:order:" .. memberId
 
 -- 3.脚本业务
@@ -26,7 +26,7 @@ if (redis.call("sismember", orderKey, memberId) == 1) then
 end
 -- 3.3 扣减库存 incrby stockKey -1
 redis.call("incrby", stockKey, -1)
--- 3.4 添加订单(保存成员) sadd orderKey memberId
+-- 3.4 记录已领取成员 sadd orderKey memberId
 redis.call("sadd", orderKey, memberId)
 -- 3.5 发送消息到队列中，XADD gy:stream:benefit-orders * k1 v1 k2 v1 ...
 redis.call("xadd", "gy:stream:benefit-orders", "*", "memberId", memberId, "benefitId", benefitId, "id", benefitOrderId)

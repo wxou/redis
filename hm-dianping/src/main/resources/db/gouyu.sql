@@ -9,6 +9,11 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+CREATE DATABASE IF NOT EXISTS `gouyu`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE `gouyu`;
+
 -- ----------------------------
 -- Table structure for gy_post
 -- ----------------------------
@@ -16,7 +21,7 @@ DROP TABLE IF EXISTS `gy_post`;
 CREATE TABLE `gy_post`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `merchant_id` bigint(20) NOT NULL COMMENT '商户id',
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '成员id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标题',
   `image_urls` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '社区动态的照片，最多9张，多张以\",\"隔开',
   `content` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '社区动态的文字描述',
@@ -41,7 +46,7 @@ INSERT INTO `gy_post` VALUES (7, 10, 1, '社区文体活动记录｜在构域遇
 DROP TABLE IF EXISTS `gy_post_comment`;
 CREATE TABLE `gy_post_comment`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '成员id',
   `post_id` bigint(20) UNSIGNED NOT NULL COMMENT '社区动态id',
   `parent_comment_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的1级评论id，如果是一级评论，则值为0',
   `reply_to_comment_id` bigint(20) UNSIGNED NOT NULL COMMENT '回复的评论id',
@@ -63,8 +68,8 @@ CREATE TABLE `gy_post_comment`  (
 DROP TABLE IF EXISTS `gy_follow_relation`;
 CREATE TABLE `gy_follow_relation`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
-  `target_member_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的用户id',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '成员id',
+  `target_member_id` bigint(20) UNSIGNED NOT NULL COMMENT '被关注成员id',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
@@ -81,8 +86,8 @@ CREATE TABLE `gy_limited_benefit`  (
   `benefit_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的权益的id',
   `stock` int(8) NOT NULL COMMENT '库存',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `starts_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '生效时间',
-  `ends_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '失效时间',
+  `starts_at` timestamp NOT NULL COMMENT '生效时间',
+  `ends_at` timestamp NOT NULL COMMENT '失效时间',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`benefit_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '限时权益权益表，与权益是一对一关系' ROW_FORMAT = Compact;
@@ -167,10 +172,10 @@ INSERT INTO `gy_merchant_category` VALUES (10, '形象护理', '/assets/categori
 DROP TABLE IF EXISTS `gy_check_in_record`;
 CREATE TABLE `gy_check_in_record`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
-  `year` year NOT NULL COMMENT '签到的年',
-  `month` tinyint(2) NOT NULL COMMENT '签到的月',
-  `date` date NOT NULL COMMENT '签到的日期',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '成员id',
+  `year` year NOT NULL COMMENT '打卡年份',
+  `month` tinyint(2) NOT NULL COMMENT '打卡月份',
+  `date` date NOT NULL COMMENT '打卡日期',
   `is_backup` tinyint(1) UNSIGNED NULL DEFAULT NULL COMMENT '是否补签',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
@@ -187,7 +192,7 @@ CREATE TABLE `gy_member`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '手机号码',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '密码，加密存储',
-  `display_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '昵称，默认是用户id',
+  `display_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '展示名称，默认由成员id生成',
   `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '成员头像',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -1209,7 +1214,7 @@ INSERT INTO `gy_member` VALUES (1009, '13688669888', '', 'member_4qh6bofkol', ''
 -- ----------------------------
 DROP TABLE IF EXISTS `gy_member_profile`;
 CREATE TABLE `gy_member_profile`  (
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '主键，用户id',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '主键，成员id',
   `city` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '城市名称',
   `introduce` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '个人介绍，不要超过128个字符',
   `fans` int(8) UNSIGNED NULL DEFAULT 0 COMMENT '粉丝数量',
@@ -1257,10 +1262,10 @@ INSERT INTO `gy_benefit` VALUES (1, 1, '构域咖啡50元权益', '园区营业�
 DROP TABLE IF EXISTS `gy_benefit_order`;
 CREATE TABLE `gy_benefit_order`  (
   `id` bigint(20) NOT NULL COMMENT '主键',
-  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '下单的用户id',
+  `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '领取权益的成员id',
   `benefit_id` bigint(20) UNSIGNED NOT NULL COMMENT '购买的权益id',
   `pay_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '支付方式 1：余额支付；2：支付宝；3：微信',
-  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单状态，1：未支付；2：已支付；3：已核销；4：已取消；5：退款中；6：已退款',
+  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '权益记录状态，1：未支付；2：已支付；3：已核销；4：已取消；5：退款中；6：已退款',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下单时间',
   `pay_time` timestamp NULL DEFAULT NULL COMMENT '支付时间',
   `use_time` timestamp NULL DEFAULT NULL COMMENT '核销时间',

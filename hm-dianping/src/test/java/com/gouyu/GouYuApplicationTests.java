@@ -49,7 +49,7 @@ class GouYuApplicationTests {
         //定义并发任务，每个线程的任务：循环 100 次生成 ID
         Runnable task = () ->{
             for (int i = 0; i < 100; i++) {
-                long id = distributedIdGenerator.nextId("order");
+                long id = distributedIdGenerator.nextId("benefit-order");
                 System.out.println("id = " + id);
             }
             //当前线程完成，计数器减 1
@@ -67,7 +67,7 @@ class GouYuApplicationTests {
     @Test
     void testSaveMerchant() throws InterruptedException {
         Merchant merchant = merchantService.getById(1L);
-        redisCacheClient.setWithLogicalExpire("cache:merchant:" + 1L, merchant, 10L, TimeUnit.SECONDS);
+        redisCacheClient.setWithLogicalExpire(RedisKeys.CACHE_MERCHANT_KEY + 1L, merchant, 10L, TimeUnit.SECONDS);
     }
 
     @Test
@@ -105,11 +105,11 @@ class GouYuApplicationTests {
             values[j] = "member_" + i;
             if (j == 999) {
                 // 发送到Redis
-                stringRedisTemplate.opsForHyperLogLog().add("hl2", values);
+                stringRedisTemplate.opsForHyperLogLog().add("gy:test:member-hll", values);
             }
         }
         // 统计数量
-        Long count = stringRedisTemplate.opsForHyperLogLog().size("hl2");
+        Long count = stringRedisTemplate.opsForHyperLogLog().size("gy:test:member-hll");
         System.out.println("count = " + count);
     }
 
