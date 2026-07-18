@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 改造前后端编译基线 | 通过 | 改造前 `mvn -o -DskipTests clean compile` 成功 |
 | 构域后端编译 | 通过 | 改造后 `mvn -o -DskipTests compile` 成功 |
-| 测试源码编译 | 通过 | `mvn -DskipTests test-compile` 成功，71 个主源码、3 个测试源码 |
+| 测试源码编译 | 通过 | `mvn -DskipTests test-compile` 成功，72 个主源码、3 个测试源码 |
 | 前端内联 JavaScript 语法 | 通过 | 10 个 HTML 页面均通过 Node `new Function` 语法检查 |
 | Nginx 配置 | 通过 | `nginx -t` 返回 syntax ok / test successful |
 | 本地资源闭环 | 通过 | 46 个构域资源文件，SQL 路径均指向 `/assets` |

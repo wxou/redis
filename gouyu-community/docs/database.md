@@ -28,10 +28,13 @@
 - 外键语义字段使用 `member_id`、`merchant_id`、`benefit_id`、`post_id`、`category_id`。
 - 审计字段使用 `created_at`、`updated_at`。
 - Java 字段通过 MyBatis-Plus 下划线转驼峰映射到数据库列。
+- `gy_follow_relation(member_id, target_member_id)` 使用联合唯一索引，防止重复关注。
+- `gy_benefit_order(member_id, benefit_id)` 使用联合唯一索引，作为一人一权益的数据库兜底。
+- `gy_member_profile.member_id` 是输入型业务主键，与成员 ID 一一对应，不使用自增。
 
 ## 演示数据
 
-初始化脚本保留原行为基线需要的记录规模和数值关系，但名称、地点、文案和图片路径已改为构域校园/园区语境。图片全部指向 `web/assets` 下的本地文件，不依赖外部图片站点。
+初始化脚本保留原行为基线需要的记录规模和数值关系，但名称、地点、文案和图片路径已改为构域校园/园区语境。图片全部指向 `web/assets` 下的本地文件，不依赖外部图片站点。咖啡实验室、西餐厅和音乐空间使用项目内原创无水印素材。
 
 ## 与 Redis 的同步数据
 
@@ -39,6 +42,6 @@
 
 - `gy:merchant:geo:{categoryId}`：写入 `gy_merchant` 的 `x`、`y`。
 - `gy:limited-benefit:stock:{id}`：写入 `gy_limited_benefit.stock`。
-- `gy:stream:benefit-orders` 及消费组：由应用初始化逻辑或部署脚本确保存在。
+- `gy:stream:benefit-orders` 及消费组：由应用启动逻辑幂等创建。
 
 这些操作只允许写入 `gy:` 命名空间。

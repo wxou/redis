@@ -14,6 +14,7 @@
 | `gy:post:liked:{postId}` | ZSet | 无固定 TTL | 动态点赞成员与时间 |
 | `gy:feed:{memberId}` | ZSet | 无固定 TTL | 成员关注流 |
 | `gy:following:{memberId}` | Set | 无固定 TTL | 成员关注集合 |
+| `gy:following:loaded:{memberId}` | String | 无固定 TTL | 关注集合已从 MySQL 加载标记 |
 | `gy:merchant:geo:{categoryId}` | GEO | 无固定 TTL | 分类下商户坐标 |
 | `gy:check-in:{memberId}:{yyyyMM}` | Bitmap | 无固定 TTL | 月度打卡位图 |
 | `gy:id:benefit-order:{yyyy:MM:dd}` | String | 无固定 TTL | 权益记录分布式 ID 日计数器 |
@@ -24,8 +25,9 @@
 
 - Stream：`gy:stream:benefit-orders`
 - 消费组：`gy-benefit-order-group`
-- 消费者：`gy-benefit-order-consumer`
+- 消费者：`gy-benefit-order-consumer-{实例随机后缀}`
 - 消息字段：`id`、`memberId`、`benefitId`
+- 应用启动时幂等创建 Stream 与消费组，不再依赖外部手工初始化。
 
 ## 隔离原则
 

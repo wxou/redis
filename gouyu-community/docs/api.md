@@ -13,6 +13,8 @@
 
 登录成功后，客户端把返回的会话令牌放入 `authorization` 请求头。
 
+由于当前无法接入短信服务，本地开发默认会在 `/member/code` 的 `data` 中返回验证码并由登录页自动回填；生产环境必须设置 `GOUYU_EXPOSE_LOGIN_CODE=false` 并接入短信发送。验证码会从 Redis 读取、严格比对，并在登录成功后删除。商户、权益和上传的读取接口公开，写操作必须登录。
+
 ## 成员 `/member`
 
 | 方法 | 路径 | 说明 |
@@ -23,6 +25,7 @@
 | GET | `/member/me` | 当前成员摘要 |
 | GET | `/member/{id}` | 成员信息 |
 | GET | `/member/info/{id}` | 成员扩展资料 |
+| PUT | `/member/info` | 保存当前成员扩展资料 |
 | POST | `/member/check-in` | 当日打卡 |
 | GET | `/member/check-in/count` | 当前连续打卡天数 |
 
@@ -47,6 +50,7 @@
 | POST | `/benefit/limited` | 新增限时权益 |
 | GET | `/benefit/list/{merchantId}` | 商户权益列表 |
 | POST | `/benefit-order/limited/{benefitId}` | 领取限时权益 |
+| GET | `/benefit-order/{orderId}` | 查询当前成员的异步权益订单 |
 
 ## 动态 `/post`
 
@@ -77,5 +81,7 @@
 | --- | --- | --- |
 | POST | `/upload/post` | 上传动态图片 |
 | GET | `/upload/post/delete?name={name}` | 删除未使用的上传图片 |
+
+上传只接受 JPEG、PNG、WebP、GIF，大小不超过 5 MB，服务端返回 `/assets/posts/...` 路径。上传与删除均需登录；删除只能作用于规范化后的 `web/assets/posts` 子目录。
 
 `/post-comment` 控制器保留为评论域入口，当前等价版本未新增评论读写接口。

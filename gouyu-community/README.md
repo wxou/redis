@@ -48,6 +48,7 @@
 | `GOUYU_REDIS_PORT` | `6379` | Redis 端口 |
 | `GOUYU_REDIS_PASSWORD` | 空 | Redis 密码 |
 | `GOUYU_IMAGE_UPLOAD_DIR` | `web/assets` 的绝对路径 | 图片上传根目录 |
+| `GOUYU_EXPOSE_LOGIN_CODE` | `true` | 本地无短信服务时返回验证码；公开/生产环境必须设为 `false` |
 
 PowerShell 示例：
 
@@ -107,6 +108,6 @@ deploy\nginx\nginx.exe -t -p "<项目绝对路径>\deploy\nginx\" -c conf\nginx.
 - [项目摘要](docs/project-summary.md)
 - [回归报告](docs/regression-report.md)
 
-## 等价改造边界
+## 当前演进状态
 
-本次改造不新增业务、不升级基础框架、不调整关键算法。原有 Lua 返回码、缓存 TTL、分页大小、消息消费顺序和锁粒度均保持不变。已知历史缺陷不借本次包装顺带修复，以便将“领域包装”与“业务优化”分开评审。
+项目先完成了不改变核心业务语义的等价包装，随后在保持框架、Lua 返回码、缓存 TTL、分页和锁粒度不变的前提下，修复了验证码校验、写接口鉴权、上传路径、Stream 初始化、GEO/关注一致性、资料保存和列表 N+1 等技术债。当前 32 个可调用路由已通过 42 个端到端场景；仍需生产化处理的内容见[项目总结](docs/project-summary.md)。

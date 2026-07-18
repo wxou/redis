@@ -37,7 +37,7 @@ CREATE TABLE `gy_post`  (
 -- ----------------------------
 INSERT INTO `gy_post` VALUES (4, 4, 2, '园区夜晚的浪漫角落｜光屿西餐厅体验', '/assets/generated/western-restaurant.png', '下班后在园区发现了一处安静的社区餐厅。空间设计简洁，服务细致，很适合成员聚会和放松。', 1, 104, '2021-12-28 19:50:01', '2022-03-10 14:26:34');
 INSERT INTO `gy_post` VALUES (5, 1, 2, '校园咖啡新据点｜构域咖啡实验室', '/assets/generated/campus-coffee-lab.png', '学习和工作间隙可以来这里坐坐，饮品选择丰富，空间安静，适合自习和小组讨论。', 1, 0, '2021-12-28 20:57:49', '2022-03-10 09:21:39');
-INSERT INTO `gy_post` VALUES (6, 10, 1, '周末好去处｜回声音乐空间体验', '/assets/posts/post-6.jpg', '园区周末活动的新选择，交通方便，空间宽敞，适合和朋友一起放松。', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:41');
+INSERT INTO `gy_post` VALUES (6, 10, 1, '周末好去处｜回声音乐空间体验', '/assets/generated/campus-music-space.png', '园区周末活动的新选择，交通方便，空间宽敞，适合和朋友一起放松。', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:41');
 INSERT INTO `gy_post` VALUES (7, 10, 1, '社区文体活动记录｜在构域遇见同好', '/assets/posts/post-7.jpg', '参加了一次社区成员组织的文体活动，认识了不少新朋友，记录这次轻松的周末体验。', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:42');
 
 -- ----------------------------
@@ -133,7 +133,7 @@ INSERT INTO `gy_merchant` VALUES (6, '北辰暖锅', 1, '/assets/merchants/merch
 INSERT INTO `gy_merchant` VALUES (7, '拾光烤鱼社', 1, '/assets/merchants/merchant-7-1.jpg,/assets/merchants/merchant-7-2.jpg', '科技园B区', '科创大道88号B2栋', 120.124691, 30.336819, 85, 0000002631, 0000001320, 47, '00:00-24:00', '2021-12-22 19:40:52', '2022-01-11 16:13:19');
 INSERT INTO `gy_merchant` VALUES (8, '青空寿司屋', 1, '/assets/merchants/merchant-8-1.jpg,/assets/merchants/merchant-8-2.jpg', '星海大学东区', '学府路26号东区商业街', 120.150526, 30.325231, 88, 0000002406, 0000001206, 46, ' 11:00-21:30', '2021-12-22 19:51:06', '2022-01-11 16:13:25');
 INSERT INTO `gy_merchant` VALUES (9, '知味炭火馆', 1, '/assets/merchants/merchant-9-1.jpg,/assets/merchants/merchant-9-2.jpg', '青禾社区', '青禾路15号邻里中心', 120.150598, 30.325251, 101, 0000002763, 0000001363, 44, '11:00-21:30', '2021-12-22 19:53:59', '2022-01-11 16:13:34');
-INSERT INTO `gy_merchant` VALUES (10, '回声音乐空间', 2, '/assets/merchants/merchant-10-1.jpg,/assets/merchants/merchant-10-2.jpg', '星海大学文体区', '文体路6号活动中心4层', 120.149093, 30.324666, 67, 0000026891, 0000000902, 37, '00:00-24:00', '2021-12-22 20:25:16', '2021-12-22 20:25:16');
+INSERT INTO `gy_merchant` VALUES (10, '回声音乐空间', 2, '/assets/generated/campus-music-space.png,/assets/merchants/merchant-10-2.jpg', '星海大学文体区', '文体路6号活动中心4层', 120.149093, 30.324666, 67, 0000026891, 0000000902, 37, '00:00-24:00', '2021-12-22 20:25:16', '2021-12-22 20:25:16');
 INSERT INTO `gy_merchant` VALUES (11, '星轨K歌馆', 2, '/assets/merchants/merchant-11-1.jpg,/assets/merchants/merchant-11-2.jpg', '科技园A区', '科创大道28号A1栋', 120.15853, 30.310002, 75, 0000035977, 0000005684, 47, '11:30-06:00', '2021-12-22 20:29:02', '2021-12-22 20:39:00');
 INSERT INTO `gy_merchant` VALUES (12, '拾音练歌房', 2, '/assets/merchants/merchant-12-1.jpg,/assets/merchants/merchant-12-2.jpg', '星海大学生活区', '青春路16号生活中心3层', 120.14983, 30.31211, 88, 0000006444, 0000000235, 46, '10:00-02:00', '2021-12-22 20:34:34', '2021-12-22 20:34:34');
 INSERT INTO `gy_merchant` VALUES (13, '青禾创意空间', 2, '/assets/merchants/merchant-13-1.jpg,/assets/merchants/merchant-13-2.jpg', '青禾社区', '青禾路30号创客中心', 120.130453, 30.327655, 58, 0000018997, 0000001857, 41, '12:00-02:00', '2021-12-22 20:38:54', '2021-12-22 20:40:04');

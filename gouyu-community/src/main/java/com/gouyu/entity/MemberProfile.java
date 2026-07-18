@@ -30,7 +30,7 @@ public class MemberProfile implements Serializable {
     /**
      * 主键，成员id
      */
-    @TableId(value = "member_id", type = IdType.AUTO)
+    @TableId(value = "member_id", type = IdType.INPUT)
     private Long memberId;
 
     /**
