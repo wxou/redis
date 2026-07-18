@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.gouyu.config.AuthProperties;
 import com.gouyu.dto.MemberDTO;
+import com.gouyu.service.AuthAuditService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -16,12 +17,15 @@ import java.util.concurrent.TimeUnit;
 
     private StringRedisTemplate stringRedisTemplate;
     private AuthProperties authProperties;
+    private AuthAuditService authAuditService;
 
     public static final String SESSION_ISSUED_AT_FIELD = "_issuedAt";
 
-    public SessionRefreshInterceptor(StringRedisTemplate stringRedisTemplate, AuthProperties authProperties) {
+    public SessionRefreshInterceptor(StringRedisTemplate stringRedisTemplate, AuthProperties authProperties,
+                                     AuthAuditService authAuditService) {
         this.stringRedisTemplate = stringRedisTemplate;
         this.authProperties = authProperties;
+        this.authAuditService = authAuditService;
     }
 
     @Override
@@ -36,6 +40,7 @@ import java.util.concurrent.TimeUnit;
         Map<Object, Object> memberMap = stringRedisTemplate.opsForHash().entries(key);
         //3.判断成员是否存在
         if (memberMap.isEmpty()){
+            auditInvalidToken(request, token, "SESSION_NOT_FOUND");
             return true;
         }
         long now = System.currentTimeMillis();
@@ -50,6 +55,7 @@ import java.util.concurrent.TimeUnit;
                 issuedAt = Long.parseLong(issuedAtValue.toString());
             } catch (NumberFormatException e) {
                 stringRedisTemplate.delete(key);
+                auditInvalidToken(request, token, "INVALID_SESSION_METADATA");
                 return true;
             }
         }
@@ -57,6 +63,7 @@ import java.util.concurrent.TimeUnit;
         long remainingAbsoluteSeconds = TimeUnit.MILLISECONDS.toSeconds(issuedAt + absoluteMillis - now);
         if (remainingAbsoluteSeconds <= 0L) {
             stringRedisTemplate.delete(key);
+            auditInvalidToken(request, token, "SESSION_ABSOLUTE_EXPIRED");
             return true;
         }
         //5.将查询到的Hash数据转为MemberDTO对象
@@ -75,5 +82,13 @@ import java.util.concurrent.TimeUnit;
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         //清空成员
         MemberContext.removeMember();
+    }
+
+    private void auditInvalidToken(HttpServletRequest request, String token, String reason) {
+        // 仅审计符合本系统令牌格式的值，避免任意垃圾请求放大数据库写入。
+        if (token != null && token.matches("^[0-9a-fA-F]{32}$")) {
+            authAuditService.record("SESSION_INVALID", null, null, request,
+                    AuthAuditService.FAILURE, reason, token);
+        }
     }
 }

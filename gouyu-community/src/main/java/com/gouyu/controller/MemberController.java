@@ -5,6 +5,8 @@ import cn.hutool.core.bean.BeanUtil;
 import com.gouyu.dto.LoginRequest;
 import com.gouyu.dto.ApiResult;
 import com.gouyu.dto.MemberDTO;
+import com.gouyu.dto.PasswordChangeRequest;
+import com.gouyu.dto.PasswordResetRequest;
 import com.gouyu.entity.Member;
 import com.gouyu.entity.MemberProfile;
 import com.gouyu.service.IMemberProfileService;
@@ -14,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>
@@ -39,9 +41,9 @@ public class MemberController {
      * 发送手机验证码
      */
     @PostMapping("code")
-    public ApiResult sendCode(@RequestParam("phone") String phone, HttpSession session) {
+    public ApiResult sendCode(@RequestParam("phone") String phone, HttpServletRequest request) {
         //发送短信验证码并保存验证码
-        return memberService.sendCode(phone, session);
+        return memberService.sendCode(phone, request);
     }
 
     /**
@@ -49,9 +51,9 @@ public class MemberController {
      * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
      */
     @PostMapping("/login")
-    public ApiResult login(@RequestBody LoginRequest loginForm, HttpSession session){
+    public ApiResult login(@RequestBody LoginRequest loginForm, HttpServletRequest request){
         //登录功能
-        return memberService.login(loginForm, session);
+        return memberService.login(loginForm, request);
     }
 
     /**
@@ -59,8 +61,20 @@ public class MemberController {
      * @return 无
      */
     @PostMapping("/logout")
-    public ApiResult logout(@RequestHeader("authorization") String token){
-        return memberService.logout(token);
+    public ApiResult logout(@RequestHeader("authorization") String token, HttpServletRequest request){
+        return memberService.logout(token, request);
+    }
+
+    @PutMapping("/password")
+    public ApiResult changePassword(@RequestBody PasswordChangeRequest passwordRequest,
+                                    HttpServletRequest request) {
+        return memberService.changePassword(passwordRequest, request);
+    }
+
+    @PostMapping("/password/reset")
+    public ApiResult resetPassword(@RequestBody PasswordResetRequest passwordRequest,
+                                   HttpServletRequest request) {
+        return memberService.resetPassword(passwordRequest, request);
     }
 
     @GetMapping("/me")

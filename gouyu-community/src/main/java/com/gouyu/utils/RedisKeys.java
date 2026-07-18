@@ -2,9 +2,7 @@ package com.gouyu.utils;
 
 public class RedisKeys {
     public static final String AUTH_CODE_KEY = "gy:auth:code:";
-    public static final Long AUTH_CODE_TTL = 2L;
     public static final String AUTH_SESSION_KEY = "gy:auth:session:";
-    public static final Long AUTH_SESSION_TTL = 36000L;
     public static final String AUTH_CODE_SEND_COOLDOWN_KEY = "gy:auth:limit:code:cooldown:";
     public static final String AUTH_CODE_SEND_PHONE_KEY = "gy:auth:limit:code:phone:";
     public static final String AUTH_CODE_SEND_IP_KEY = "gy:auth:limit:code:ip:";
