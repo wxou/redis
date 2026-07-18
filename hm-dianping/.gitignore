@@ -36,6 +36,7 @@ build/
 session-tokens.txt
 
 # Nginx runtime state
+!deploy/nginx/logs/
 deploy/nginx/logs/*
 !deploy/nginx/logs/.gitkeep
 deploy/nginx/temp/*

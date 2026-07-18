@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>构域</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/brand/gouyu-mark.svg">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css">
+
+  <link href="./css/merchant-detail.css" rel="stylesheet">
+  <link href="./css/main.css" rel="stylesheet">
+
+  <style type="text/css">
+
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title"></div>
+    <div class="header-share">...</div>
+  </div>
+  <div class="top-bar"></div>
+  <div class="merchant-info-box">
+    <div class="merchant-title">{{merchant.name}}</div>
+    <div class="merchant-rate">
+      <el-rate
+          disabled v-model="merchant.score/10"
+          text-color="#F63"
+          show-score
+      ></el-rate>
+      <span>{{merchant.commentCount}}条</span>
+    </div>
+    <div class="merchant-rate-info"> 口味:4.9  环境:4.8  服务:4.7 </div>
+    <div class="merchant-rank">
+      <img src="/assets/ui/community-rank.png" width="63" height="20" alt="">
+      <span>拱墅区好评榜第3名</span>
+      <div><i class="el-icon-arrow-right"></i></div>
+    </div>
+    <div class="merchant-images">
+      <div v-for="(s,i) in merchant.imageUrls" :key="i">
+        <img :src="s" alt="">
+      </div>
+    </div>
+    <div class="merchant-address">
+      <div><i class="el-icon-map-location"></i></div>
+      <span>{{merchant.address}}</span>
+      <div style="width: 10px; flex-grow: 2; text-align: center; color: #e1e2e3">|</div>
+      <div style="margin: 0 5px"><img src="/assets/icons/default-avatar.png" alt=""></div>
+      <div><img src="/assets/icons/default-avatar.png" alt=""></div>
+    </div>
+  </div>
+  <div class="merchant-divider"></div>
+  <div class="merchant-open-time">
+    <span><i class="el-icon-watch"></i></span>
+    <div>营业时间</div>
+    <div>{{merchant.businessHours}}</div>
+    <span class="line-right">查看详情 <i class="el-icon-arrow-right"></i></span>
+  </div>
+  <div class="merchant-divider"></div>
+  <div class="merchant-benefit">
+    <div>
+      <span class="benefit-icon">券</span>
+      <span style="font-weight: bold;">代金券</span>
+    </div>
+    <div class="benefit-box" v-for="v in benefits" :key="v.id" v-if="!isEnd(v)">
+      <div class="benefit-circle">
+        <div class="benefit-b"></div>
+        <div class="benefit-b"></div>
+        <div class="benefit-b"></div>
+      </div>
+      <div class="benefit-left">
+        <div class="benefit-title">{{v.title}}</div>
+        <div class="benefit-subtitle">{{v.subTitle}}</div>
+        <div class="benefit-price"><div>￥ {{util.formatPrice(v.thresholdAmount)}}</div>  <span>{{(v.thresholdAmount*10)/v.benefitAmount}}折</span></div>
+      </div>
+      <div class="benefit-right">
+        <div v-if="v.type" class="limited-claim-box">
+          <div class="benefit-btn" :class="{'disable-btn': isNotBegin(v) || v.stock < 1}" @click="claimBenefit(v)">限时领取</div>
+          <div class="limited-claim-stock">剩余 <span>{{v.stock}}</span> 张</div>
+          <div class="limited-claim-time">{{formatTime(v)}}</div>
+        </div>
+        <div class="benefit-btn" v-else>领取</div>
+      </div>
+    </div>
+  </div>
+  <div class="merchant-divider"></div>
+  <div class="merchant-comments">
+    <div class="comments-head">
+      <div>网友评价 <span>（119）</span></div>
+      <div><i class="el-icon-arrow-right"></i></div>
+    </div>
+    <div class="comment-tags">
+      <div class="tag">味道赞(19)</div>
+      <div class="tag">牛肉赞(16)</div>
+      <div class="tag">菜品不错(11)</div>
+      <div class="tag">回头客(4)</div>
+      <div class="tag">分量足(4)</div>
+      <div class="tag">停车方便(3)</div>
+      <div class="tag">海鲜棒(3)</div>
+      <div class="tag">饮品赞(3)</div>
+      <div class="tag">朋友聚餐(6)</div>
+    </div>
+    <div class="comment-list">
+      <div class="comment-box" v-for="i in 3" :key="i">
+        <div class="comment-icon">
+          <img src="/assets/icons/default-avatar.png" alt="">
+        </div>
+        <div class="comment-info">
+          <div class="comment-member">叶小乙 <span>Lv5</span></div>
+          <div style="display: flex;">
+            打分
+            <el-rate disabled v-model="4.5" ></el-rate>
+          </div>
+          <div style="padding: 5px 0; font-size: 14px">
+            某平台上买的券，价格可以当工作餐吃，虽然价格便宜，但是这家店一点都没有...
+          </div>
+          <div class="comment-images">
+            <img src="/assets/icons/default-avatar.png" alt="">
+            <img src="/assets/icons/default-avatar.png" alt="">
+            <img src="/assets/icons/default-avatar.png" alt="">
+            <img src="/assets/icons/default-avatar.png" alt="">
+          </div>
+          <div>
+            浏览641 &nbsp;&nbsp;&nbsp;&nbsp;评论5
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between;padding: 15px 0; border-top: 1px solid #f1f1f1; margin-top: 10px;">
+        <div>查看全部119条评价</div>
+        <div><i class="el-icon-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="merchant-divider"></div>
+  <div class="copyright">
+    copyright ©2021 gouyu.local
+  </div>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script>
+
+  const app = new Vue({
+    el: "#app",
+    data: {
+      util,
+      merchant: {},
+      benefits: []
+    },
+    created() {
+      // 获取参数
+      let merchantId = util.getUrlParam("id");
+      // 查询酒店信息
+      this.queryMerchantById(merchantId);
+      // 查询权益信息
+      this.queryBenefit(merchantId);
+    },
+    methods: {
+      goBack() {
+        history.back();
+      },
+      queryMerchantById(merchantId) {
+        axios.get("/merchant/" + merchantId)
+        .then(({data}) => {
+          data.imageUrls = data.imageUrls.split(",")
+          this.merchant = data
+        })
+        .catch(this.$message.error)
+      },
+      queryBenefit(merchantId) {
+        axios.get("/benefit/list/" + merchantId)
+        .then(({data}) => {
+          this.benefits = data;
+        })
+        .catch(this.$message.error)
+      },
+      formatTime(v){
+        let b = new Date(v.startsAt);
+        let e = new Date(v.endsAt);
+        return b.getMonth() + 1 + "月" + b.getDate() + "日 "
+          +  b.getHours() + ":" + this.formatMinutes(b.getMinutes())
+          + " ~ "/*  + e.getMonth() + 1 + "月" + e.getDate() + "日 " */
+          +  e.getHours() + ":" + this.formatMinutes(e.getMinutes());
+      },
+      formatMinutes(m){
+        if(m < 10) m = "0" + m
+        return m;
+      },
+      isNotBegin(v){
+        return new Date(v.startsAt).getTime() > new Date().getTime();
+      },
+      isEnd(v){
+        if(!v.endsAt) return false;
+        return new Date(v.endsAt).getTime() < new Date().getTime();
+      },
+      claimBenefit(v){
+        if(!token){
+          this.$message.error("请先登录")
+          // 未登录，跳转
+          setTimeout(() => {
+            location.href = "/login.html"
+          }, 200);
+          return;
+        }
+        if(this.isNotBegin(v)){
+          this.$message.error("权益领取尚未开始！")
+          return;
+        }
+        if(this.isEnd(v)){
+          this.$message.error("权益领取已经结束！")
+          return;
+        }
+        if(v.stock < 1){
+          this.$message.error("库存不足，请刷新再试试！")
+          return;
+        }
+        let id = v.id;
+        // 限时领取领取
+        axios.post("/benefit-order/limited/" + id)
+        .then(({data}) => {
+          // 领取成功，这里输出权益记录id，支付功能TODO
+          this.$message.success("领取成功，权益记录id：" + data)
+        })
+        .catch(this.$message.error)
+      }
+    }
+  })
+</script>
+</body>
+</html>
