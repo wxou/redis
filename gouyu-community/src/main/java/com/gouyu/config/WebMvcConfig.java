@@ -17,6 +17,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Resource
     private  StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private AuthProperties authProperties;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         //登录拦截器
@@ -31,7 +34,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/benefit/**"
                 ).order(1);
         //刷新token拦截器
-        registry.addInterceptor(new SessionRefreshInterceptor(stringRedisTemplate)).addPathPatterns("/**").order(0);
+        registry.addInterceptor(new SessionRefreshInterceptor(stringRedisTemplate, authProperties)).addPathPatterns("/**").order(0);
         // 商户、权益和上传的读取接口公开，写操作必须登录
         registry.addInterceptor(new WriteAuthInterceptor())
                 .addPathPatterns("/merchant/**", "/benefit/**", "/upload/**")

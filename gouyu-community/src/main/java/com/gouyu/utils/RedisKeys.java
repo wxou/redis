@@ -5,6 +5,13 @@ public class RedisKeys {
     public static final Long AUTH_CODE_TTL = 2L;
     public static final String AUTH_SESSION_KEY = "gy:auth:session:";
     public static final Long AUTH_SESSION_TTL = 36000L;
+    public static final String AUTH_CODE_SEND_COOLDOWN_KEY = "gy:auth:limit:code:cooldown:";
+    public static final String AUTH_CODE_SEND_PHONE_KEY = "gy:auth:limit:code:phone:";
+    public static final String AUTH_CODE_SEND_IP_KEY = "gy:auth:limit:code:ip:";
+    public static final String AUTH_CODE_FAILURE_KEY = "gy:auth:failure:code:";
+    public static final String AUTH_LOGIN_IP_KEY = "gy:auth:limit:login:ip:";
+    public static final String AUTH_LOGIN_FAILURE_KEY = "gy:auth:failure:login:";
+    public static final String AUTH_LOGIN_LOCK_KEY = "gy:auth:lock:login:";
 
     public static final Long CACHE_NULL_TTL = 2L;
 
