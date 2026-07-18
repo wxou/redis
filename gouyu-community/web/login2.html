@@ -24,16 +24,16 @@
   <div class="login-container">
     <div class="header">
       <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
-    <div class="header-title">密码登录暂未开放&nbsp;&nbsp;&nbsp;</div>
+    <div class="header-title">密码登录&nbsp;&nbsp;&nbsp;</div>
     </div>
     <div class="content">
       <div class="login-form">
         <el-input placeholder="请输入手机号" v-model="form.phone">
         </el-input>
         <div style="height: 5px"></div>
-        <el-input placeholder="请输入密码" v-model="form.password">
+        <el-input placeholder="请输入8至20位密码" v-model="form.password" show-password maxlength="20">
         </el-input>
-        <div style="text-align: center; color: #8c939d;margin: 5px 0"><a href="javascript:void(0)">忘记密码</a></div>
+        <div style="text-align: center; color: #8c939d;margin: 5px 0"><a href="javascript:void(0)" @click="resetVisible = true">忘记密码</a></div>
         <el-button @click="login" style="width: 100%; background-color:#f63; color: #fff;">登录</el-button>
         <div style="text-align: right; color:#333333; margin: 5px 0"><a href="/login.html">验证码登录</a></div>
       </div>
@@ -50,6 +50,20 @@
         </div>
       </div>
     </div>
+    <el-dialog title="验证码重置密码" :visible.sync="resetVisible" width="90%">
+      <el-input placeholder="请输入手机号" v-model="resetForm.phone"></el-input>
+      <div style="height: 8px"></div>
+      <div style="display: flex; justify-content: space-between">
+        <el-input style="width: 60%" placeholder="请输入验证码" v-model="resetForm.code"></el-input>
+        <el-button style="width: 38%" type="success" @click="sendResetCode" :disabled="resetDisabled">{{resetCodeBtnMsg}}</el-button>
+      </div>
+      <div style="height: 8px"></div>
+      <el-input placeholder="请输入8至20位新密码" v-model="resetForm.newPassword" show-password maxlength="20"></el-input>
+      <span slot="footer">
+        <el-button @click="resetVisible = false">取消</el-button>
+        <el-button type="primary" @click="resetPassword">重置密码</el-button>
+      </span>
+    </el-dialog>
   </div>
 </div>
 <script src="./js/vue.js"></script>
@@ -63,8 +77,11 @@
     el: "#app",
     data: {
       radio: "",
-      form:{
-      }
+      form:{},
+      resetVisible: false,
+      resetDisabled: false,
+      resetCodeBtnMsg: "发送验证码",
+      resetForm: {}
     },
     methods: {
       login(){
@@ -72,7 +89,64 @@
           this.$message.error("请先确认阅读成员协议！");
           return;
         }
-        this.$message.warning("当前未接入密码认证，请使用验证码登录");
+        if(!this.form.phone || !this.validPassword(this.form.password)){
+          this.$message.error("请输入手机号和8至20位密码");
+          return;
+        }
+        axios.post("/member/login", this.form)
+          .then(({data}) => {
+            sessionStorage.setItem("token", data);
+            location.href = "/index.html";
+          })
+          .catch(err => this.$message.error(err));
+      },
+      sendResetCode(){
+        if(!this.resetForm.phone){
+          this.$message.error("请输入手机号");
+          return;
+        }
+        axios.post("/member/code?phone=" + encodeURIComponent(this.resetForm.phone))
+          .then(({data}) => {
+            if(data){
+              this.$set(this.resetForm, "code", data);
+              this.$message.success("开发验证码已自动填入");
+            }else{
+              this.$message.success("验证码已发送");
+            }
+            this.startResetCountdown();
+          })
+          .catch(err => this.$message.error(err));
+      },
+      startResetCountdown(){
+        this.resetDisabled = true;
+        let seconds = 60;
+        this.resetCodeBtnMsg = seconds + "秒后重发";
+        const taskId = setInterval(() => {
+          seconds--;
+          this.resetCodeBtnMsg = seconds + "秒后重发";
+          if(seconds <= 0){
+            clearInterval(taskId);
+            this.resetDisabled = false;
+            this.resetCodeBtnMsg = "发送验证码";
+          }
+        }, 1000);
+      },
+      resetPassword(){
+        if(!this.resetForm.phone || !this.resetForm.code || !this.validPassword(this.resetForm.newPassword)){
+          this.$message.error("请完整填写手机号、验证码和8至20位新密码");
+          return;
+        }
+        axios.post("/member/password/reset", this.resetForm)
+          .then(() => {
+            this.$message.success("密码已重置，请使用新密码登录");
+            this.form.phone = this.resetForm.phone;
+            this.resetVisible = false;
+            this.resetForm = {};
+          })
+          .catch(err => this.$message.error(err));
+      },
+      validPassword(password){
+        return password && password.length >= 8 && password.length <= 20;
       },
       goBack(){
         history.back();

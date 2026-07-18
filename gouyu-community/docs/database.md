@@ -12,6 +12,7 @@
 | --- | --- | --- |
 | `gy_member` | 成员 | 登录主体与基础资料 |
 | `gy_member_profile` | 成员 | 成员扩展资料 |
+| `gy_auth_audit_log` | 认证 | 登录、验证码、密码和会话安全事件审计 |
 | `gy_check_in_record` | 成员 | 打卡关系表（Bitmap 为主要运行路径） |
 | `gy_merchant` | 商户 | 商户、坐标、评分与营业信息 |
 | `gy_merchant_category` | 商户 | 商户分类 |
@@ -31,6 +32,11 @@
 - `gy_follow_relation(member_id, target_member_id)` 使用联合唯一索引，防止重复关注。
 - `gy_benefit_order(member_id, benefit_id)` 使用联合唯一索引，作为一人一权益的数据库兜底。
 - `gy_member_profile.member_id` 是输入型业务主键，与成员 ID 一一对应，不使用自增。
+- `gy_auth_audit_log` 只保存脱敏手机号和 Token 的 SHA-256 摘要，不保存验证码、密码或完整 Token；默认保留 180 天。
+
+## 增量迁移
+
+已有 `gouyu` 数据库可执行 `src/main/resources/db/migration/20260718_auth_hardening.sql` 创建认证审计表。该脚本不删除现有表或业务数据，可重复执行。
 
 ## 演示数据
 

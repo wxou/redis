@@ -5,7 +5,14 @@
 | Key 模式 | 类型 | TTL | 用途 |
 | --- | --- | --- | --- |
 | `gy:auth:code:{phone}` | String | 2 分钟 | 登录验证码 |
-| `gy:auth:session:{token}` | Hash | 36000 分钟 | 成员会话 |
+| `gy:auth:session:{token}` | Hash | 空闲 120 分钟、最长 7 天 | 成员会话及签发时间 |
+| `gy:auth:limit:code:cooldown:{phone}` | String | 60 秒 | 同手机号验证码发送冷却 |
+| `gy:auth:limit:code:phone:{phone}` | String | 24 小时 | 同手机号验证码发送计数 |
+| `gy:auth:limit:code:ip:{ip}` | String | 1 小时 | 同 IP 验证码发送计数 |
+| `gy:auth:failure:code:{phone}` | String | 2 分钟 | 验证码错误计数，5 次后作废 |
+| `gy:auth:limit:login:ip:{ip}` | String | 10 分钟 | 同 IP 登录请求计数 |
+| `gy:auth:failure:login:{phone}` | String | 15 分钟 | 单账号登录失败计数 |
+| `gy:auth:lock:login:{phone}` | String | 15 分钟 | 登录失败达到阈值后的账号锁 |
 | `gy:cache:merchant:{id}` | String | 30 分钟 | 商户详情缓存 |
 | `gy:cache:merchant-category:list` | String | 3600 分钟 | 分类列表缓存 |
 | `gy:lock:merchant:{id}` | String | 10 秒 | 商户缓存重建锁 |

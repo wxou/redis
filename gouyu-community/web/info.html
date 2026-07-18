@@ -47,6 +47,9 @@
       <div class="edit-btn" @click="toEdit">
         编辑资料
       </div>
+      <div style="margin-top: 8px; color: #f63; cursor: pointer" @click="passwordVisible = true">
+        设置或修改密码
+      </div>
     </div>
     <div class="logout-btn" @click="logout">
       退出登录
@@ -93,6 +96,17 @@
       </el-tab-pane>
     </el-tabs>
   </div>
+  <el-dialog title="设置或修改密码" :visible.sync="passwordVisible" width="90%">
+    <el-input placeholder="已有密码时请输入当前密码" v-model="passwordForm.currentPassword" show-password maxlength="20"></el-input>
+    <div style="height: 8px"></div>
+    <el-input placeholder="请输入8至20位新密码" v-model="passwordForm.newPassword" show-password maxlength="20"></el-input>
+    <div style="height: 8px"></div>
+    <el-input placeholder="请再次输入新密码" v-model="passwordForm.confirmPassword" show-password maxlength="20"></el-input>
+    <span slot="footer">
+      <el-button @click="passwordVisible = false">取消</el-button>
+      <el-button type="primary" @click="changePassword">保存密码</el-button>
+    </span>
+  </el-dialog>
   <foot-bar :active-btn="4"></foot-bar>
 </div>
 <script src="./js/vue.js"></script>
@@ -116,6 +130,8 @@
       },
       count: 5,
       isReachBottom: false,
+      passwordVisible: false,
+      passwordForm: {},
     },
     created() {
       this.queryMember();
@@ -184,6 +200,25 @@
       },
       toEdit() {
         location.href = 'info-edit.html'
+      },
+      changePassword() {
+        const form = this.passwordForm;
+        if(!form.newPassword || form.newPassword.length < 8 || form.newPassword.length > 20){
+          this.$message.error("新密码长度必须为8至20位");
+          return;
+        }
+        if(form.newPassword !== form.confirmPassword){
+          this.$message.error("两次输入的新密码不一致");
+          return;
+        }
+        axios.put("/member/password", {
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword
+        }).then(() => {
+          this.$message.success("密码保存成功");
+          this.passwordVisible = false;
+          this.passwordForm = {};
+        }).catch(err => this.$message.error(err));
       },
       logout() {
         axios.post("/member/logout")

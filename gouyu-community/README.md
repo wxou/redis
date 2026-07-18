@@ -6,7 +6,7 @@
 
 ## 核心能力
 
-- 手机验证码登录与 Redis 会话续期
+- 手机验证码/密码登录、Redis 双重会话期限与认证限流
 - 商户分类、详情缓存、附近商户 GEO 检索
 - 缓存穿透、缓存击穿和逻辑过期实践
 - 社区动态发布、热门动态、点赞排行
@@ -49,6 +49,13 @@
 | `GOUYU_REDIS_PASSWORD` | 空 | Redis 密码 |
 | `GOUYU_IMAGE_UPLOAD_DIR` | `web/assets` 的绝对路径 | 图片上传根目录 |
 | `GOUYU_EXPOSE_LOGIN_CODE` | `true` | 本地无短信服务时返回验证码；公开/生产环境必须设为 `false` |
+| `GOUYU_AUTH_SESSION_IDLE_MINUTES` | `120` | 会话空闲有效期，访问时滑动续期 |
+| `GOUYU_AUTH_SESSION_ABSOLUTE_HOURS` | `168` | 会话绝对有效期，默认 7 天 |
+| `GOUYU_AUTH_CODE_SEND_INTERVAL_SECONDS` | `60` | 同手机号验证码最短发送间隔 |
+| `GOUYU_AUTH_CODE_PHONE_DAILY_LIMIT` | `10` | 同手机号 24 小时发送上限 |
+| `GOUYU_AUTH_CODE_IP_HOURLY_LIMIT` | `30` | 同 IP 一小时发送上限 |
+| `GOUYU_AUTH_LOGIN_IP_LIMIT` | `30` | 登录限流窗口内同 IP 请求上限 |
+| `GOUYU_AUTH_AUDIT_RETENTION_DAYS` | `180` | 认证审计日志保留天数 |
 
 PowerShell 示例：
 
@@ -68,6 +75,12 @@ mysql -h 127.0.0.1 -u root -p < src/main/resources/db/gouyu.sql
 ```
 
 脚本包含构域领域表、索引和演示数据。详细说明见 [数据库说明](docs/database.md)。
+
+已有数据库升级认证能力时，无需重新导入演示数据，可单独执行：
+
+```powershell
+mysql -h 127.0.0.1 -u root -p < src/main/resources/db/migration/20260718_auth_hardening.sql
+```
 
 ## 启动
 
