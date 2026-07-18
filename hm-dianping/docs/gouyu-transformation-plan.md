@@ -224,7 +224,7 @@ BlogMapper                  → PostMapper
 | `content` | `body` |
 | `isLike` | `likedByCurrentMember` |
 | `parentId` | `parentCommentId` |
-| `answerId` | `replyToMemberId` |
+| `answerId` | `replyToCommentId` |
 
 ## 6. 数据库改造
 

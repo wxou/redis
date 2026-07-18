@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gouyu.mapper.BenefitMapper">
+
+    <select id="queryBenefitsOfMerchant" resultType="com.gouyu.entity.Benefit" parameterType="java.lang.Long">
+        SELECT
+            b.`id`, b.`merchant_id`, b.`title`, b.`sub_title`, b.`rules`, b.`threshold_amount`,
+            b.`benefit_amount`, b.`type`, lb.`stock`, lb.`starts_at`, lb.`ends_at`
+        FROM gouyu.gy_benefit b
+        LEFT JOIN gouyu.gy_limited_benefit lb ON b.id = lb.benefit_id
+        WHERE b.merchant_id = #{merchantId} AND b.status = 1
+    </select>
+</mapper>

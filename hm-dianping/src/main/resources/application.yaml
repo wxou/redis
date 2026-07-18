@@ -2,16 +2,16 @@ server:
   port: 8081
 spring:
   application:
-    name: hmdp
+    name: gouyu-community
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC
-    username: root
-    password: 147258369Abc.
+    url: ${GOUYU_MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gouyu?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8}
+    username: ${GOUYU_MYSQL_USERNAME:root}
+    password: ${GOUYU_MYSQL_PASSWORD:}
   redis:
-    host: 192.168.100.128
-    port: 6379
-    password: 123321
+    host: ${GOUYU_REDIS_HOST:127.0.0.1}
+    port: ${GOUYU_REDIS_PORT:6379}
+    password: ${GOUYU_REDIS_PASSWORD:}
     lettuce:
       pool:
         max-active: 10
@@ -21,7 +21,7 @@ spring:
   jackson:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
 mybatis-plus:
-  type-aliases-package: com.hmdp.entity # 别名扫描包
+  type-aliases-package: com.gouyu.entity # 别名扫描包
 logging:
   level:
-    com.hmdp: debug
+    com.gouyu: debug

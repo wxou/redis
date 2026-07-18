@@ -1,0 +1,109 @@
+package com.gouyu.controller;
+
+
+import cn.hutool.core.bean.BeanUtil;
+import com.gouyu.dto.LoginRequest;
+import com.gouyu.dto.ApiResult;
+import com.gouyu.dto.MemberDTO;
+import com.gouyu.entity.Member;
+import com.gouyu.entity.MemberProfile;
+import com.gouyu.service.IMemberProfileService;
+import com.gouyu.service.IMemberService;
+import com.gouyu.utils.MemberContext;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+
+/**
+ * <p>
+ * 前端控制器
+ * </p>
+ *
+ * @author 构域项目组
+ * @since 2021-12-22
+ */
+@Slf4j
+@RestController
+@RequestMapping("/member")
+public class MemberController {
+
+    @Resource
+    private IMemberService memberService;
+
+    @Resource
+    private IMemberProfileService memberProfileService;
+
+    /**
+     * 发送手机验证码
+     */
+    @PostMapping("code")
+    public ApiResult sendCode(@RequestParam("phone") String phone, HttpSession session) {
+        //发送短信验证码并保存验证码
+        return memberService.sendCode(phone, session);
+    }
+
+    /**
+     * 登录功能
+     * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
+     */
+    @PostMapping("/login")
+    public ApiResult login(@RequestBody LoginRequest loginForm, HttpSession session){
+        //登录功能
+        return memberService.login(loginForm, session);
+    }
+
+    /**
+     * 登出功能
+     * @return 无
+     */
+    @PostMapping("/logout")
+    public ApiResult logout(){
+        // TODO 实现登出功能
+        return ApiResult.fail("功能未完成");
+    }
+
+    @GetMapping("/me")
+    public ApiResult me(){
+        //获取当前登录的成员并返回
+        MemberDTO member = MemberContext.getMember();
+        return ApiResult.ok( member);
+    }
+
+    @GetMapping("/info/{id}")
+    public ApiResult info(@PathVariable("id") Long memberId){
+        // 查询详情
+        MemberProfile info = memberProfileService.getById(memberId);
+        if (info == null) {
+            // 没有详情，应该是第一次查看详情
+            return ApiResult.ok();
+        }
+        info.setCreatedAt(null);
+        info.setUpdatedAt(null);
+        // 返回
+        return ApiResult.ok(info);
+    }
+
+    @GetMapping("/{id}")
+    public ApiResult queryMemberById(@PathVariable("id") Long memberId){
+        // 查询详情
+        Member member = memberService.getById(memberId);
+        if (member == null) {
+            return ApiResult.ok();
+        }
+        MemberDTO memberDTO = BeanUtil.copyProperties(member, MemberDTO.class);
+        // 返回
+        return ApiResult.ok(memberDTO);
+    }
+
+    @PostMapping("/check-in")
+    public ApiResult checkIn(){
+        return memberService.checkIn();
+    }
+
+    @GetMapping("/check-in/count")
+    public ApiResult checkInCount(){
+        return memberService.checkInCount();
+    }
+}

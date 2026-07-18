@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 本地会话令牌生成文件
+session-tokens.txt
+
+# Nginx runtime state
+deploy/nginx/logs/*
+!deploy/nginx/logs/.gitkeep
+deploy/nginx/temp/*
+!deploy/nginx/temp/.gitkeep
