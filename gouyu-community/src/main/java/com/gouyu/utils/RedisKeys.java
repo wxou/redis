@@ -18,6 +18,7 @@ public class RedisKeys {
     public static final String POST_LIKED_KEY = "gy:post:liked:";
     public static final String FEED_KEY = "gy:feed:";
     public static final String FOLLOWING_KEY = "gy:following:";
+    public static final String FOLLOWING_LOADED_KEY = "gy:following:loaded:";
     public static final String MERCHANT_GEO_KEY = "gy:merchant:geo:";
     public static final String MEMBER_CHECK_IN_KEY = "gy:check-in:";
     public static final String CACHE_MERCHANT_CATEGORY_KEY = "gy:cache:merchant-category:list";

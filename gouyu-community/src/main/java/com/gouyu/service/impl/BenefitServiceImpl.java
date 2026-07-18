@@ -43,6 +43,13 @@ public class BenefitServiceImpl extends ServiceImpl<BenefitMapper, Benefit> impl
     @Override
     @Transactional
     public void addLimitedBenefit(Benefit benefit) {
+        if (benefit.getStock() == null || benefit.getStock() < 1) {
+            throw new IllegalArgumentException("限时权益库存必须大于0");
+        }
+        if (benefit.getStartsAt() == null || benefit.getEndsAt() == null
+                || !benefit.getEndsAt().isAfter(benefit.getStartsAt())) {
+            throw new IllegalArgumentException("限时权益时间范围无效");
+        }
         // 保存权益
         save(benefit);
         // 保存限时权益信息

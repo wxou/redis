@@ -21,6 +21,8 @@ public interface IMerchantService extends IService<Merchant> {
      */
     ApiResult queryById(Long id);
 
+    ApiResult saveMerchant(Merchant merchant);
+
     /**
      * 更新商户信息
      * @param merchant 商户数据

@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.gouyu.dto.LoginRequest;
 import com.gouyu.dto.ApiResult;
@@ -17,6 +18,7 @@ import com.gouyu.utils.GouYuConstants;
 import com.gouyu.utils.MemberContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -45,6 +47,9 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Value("${gouyu.auth.expose-code:true}")
+    private boolean exposeCode;
+
     /**
      * 发送验证码
      * @param phone 手机号
@@ -65,11 +70,9 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         //4.保存验证码到 Redis
         stringRedisTemplate.opsForValue().set(RedisKeys.AUTH_CODE_KEY +phone, code, RedisKeys.AUTH_CODE_TTL, TimeUnit.MINUTES);
 
-        //5.发送验证码
+        //5.短信服务接入前，本地开发模式直接把验证码返回给前端
         log.debug("发送短信验证码成功，验证码：{}",code);
-
-        //返回ok
-        return ApiResult.ok();
+        return exposeCode ? ApiResult.ok(code) : ApiResult.ok();
     }
 
     /**
@@ -84,13 +87,16 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
             //2.如果不符合，返回错误信息
             return ApiResult.fail("手机号格式错误");
         }
+        if (StrUtil.isNotBlank(loginForm.getPassword())) {
+            return ApiResult.fail("暂不支持密码登录，请使用验证码登录");
+        }
         //3.校验验证码,从Redis获取验证码并校验
-      /*  String cacheCode = stringRedisTemplate.opsForValue().get(RedisKeys.AUTH_CODE_KEY +phone);
+        String cacheCode = stringRedisTemplate.opsForValue().get(RedisKeys.AUTH_CODE_KEY +phone);
         String code = loginForm.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
             //3.不一致，报错
             return ApiResult.fail("验证码错误");
-        }*/
+        }
         //4.一致，根据手机号查询成员 select * from tb_ser where phone = ?
         Member member = query().eq("phone", phone).one();
 
@@ -112,6 +118,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         stringRedisTemplate.opsForHash().putAll(RedisKeys.AUTH_SESSION_KEY + token , memberMap);
         //7.4.设置token有效期
         stringRedisTemplate.expire(RedisKeys.AUTH_SESSION_KEY + token, RedisKeys.AUTH_SESSION_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.delete(RedisKeys.AUTH_CODE_KEY + phone);
         return ApiResult.ok(token);
     }
 

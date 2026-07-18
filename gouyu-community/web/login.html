@@ -99,7 +99,12 @@
         }
         // 发送验证码
         axios.post("/member/code?phone="+this.form.phone)
-          .then(() => {})
+          .then(({data}) => {
+            if (data) {
+              this.form.code = data;
+              this.$message.success("开发验证码已自动填入");
+            }
+          })
           .catch(err => {
             console.log(err);
             this.$message.error(err)

@@ -20,8 +20,16 @@ spring:
         time-between-eviction-runs: 10s
   jackson:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 mybatis-plus:
   type-aliases-package: com.gouyu.entity # 别名扫描包
 logging:
   level:
     com.gouyu: debug
+gouyu:
+  auth:
+    # 未接入短信服务时，本地开发模式把验证码返回给前端；生产环境应设为 false。
+    expose-code: ${GOUYU_EXPOSE_LOGIN_CODE:true}

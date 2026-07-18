@@ -84,6 +84,19 @@ public class MemberController {
         return ApiResult.ok(info);
     }
 
+    @PutMapping("/info")
+    public ApiResult updateInfo(@RequestBody MemberProfile info) {
+        info.setMemberId(MemberContext.getMember().getId());
+        info.setFans(null);
+        info.setFollowee(null);
+        info.setCredits(null);
+        info.setLevel(null);
+        info.setCreatedAt(null);
+        info.setUpdatedAt(null);
+        memberProfileService.saveOrUpdate(info);
+        return ApiResult.ok();
+    }
+
     @GetMapping("/{id}")
     public ApiResult queryMemberById(@PathVariable("id") Long memberId){
         // 查询详情

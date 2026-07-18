@@ -43,10 +43,7 @@ public class MerchantController {
      */
     @PostMapping
     public ApiResult saveMerchant(@RequestBody Merchant merchant) {
-        // 写入数据库
-        merchantService.save(merchant);
-        // 返回商户id
-        return ApiResult.ok(merchant.getId());
+        return merchantService.saveMerchant(merchant);
     }
 
     /**

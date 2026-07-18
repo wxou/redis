@@ -3,6 +3,7 @@ package com.gouyu.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.gouyu.dto.ApiResult;
 import com.gouyu.entity.BenefitOrder;
+import com.gouyu.entity.LimitedBenefit;
 import com.gouyu.mapper.BenefitOrderMapper;
 import com.gouyu.service.ILimitedBenefitService;
 import com.gouyu.service.IBenefitOrderService;
@@ -18,18 +19,21 @@ import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.UUID;
 
 /**
  * <p>
@@ -43,6 +47,9 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, BenefitOrder> implements IBenefitOrderService {
 
+    private static final String STREAM_KEY = "gy:stream:benefit-orders";
+    private static final String STREAM_GROUP = "gy-benefit-order-group";
+
     @Resource
     private ILimitedBenefitService limitedBenefitService;
 
@@ -54,6 +61,12 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
 
     @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private PlatformTransactionManager transactionManager;
+
+    private TransactionTemplate transactionTemplate;
+    private final String consumerName = "gy-benefit-order-consumer-" + UUID.randomUUID().toString().substring(0, 8);
 
     private static final DefaultRedisScript<Long> LIMITED_BENEFIT_SCRIPT;
 
@@ -67,12 +80,34 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
 
     @PostConstruct
     private void init() {
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        ensureStreamGroup();
         BENEFIT_ORDER_EXECUTOR.submit(new BenefitOrderHandler());
+    }
+
+    private void ensureStreamGroup() {
+        RecordId bootstrapId = null;
+        try {
+            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(STREAM_KEY))) {
+                Map<String, String> bootstrap = new HashMap<>();
+                bootstrap.put("bootstrap", "1");
+                bootstrapId = stringRedisTemplate.opsForStream().add(STREAM_KEY, bootstrap);
+            }
+            stringRedisTemplate.opsForStream().createGroup(STREAM_KEY, ReadOffset.from("0"), STREAM_GROUP);
+        } catch (Exception e) {
+            if (e.getMessage() == null || !e.getMessage().contains("BUSYGROUP")) {
+                throw e;
+            }
+        } finally {
+            if (bootstrapId != null) {
+                stringRedisTemplate.opsForStream().delete(STREAM_KEY, bootstrapId);
+            }
+        }
     }
 
 
     private class BenefitOrderHandler implements Runnable {
-        String queueName = "gy:stream:benefit-orders";
+        String queueName = STREAM_KEY;
         @Override
         public void run() {
             while (true) {
@@ -80,7 +115,7 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
                 try {
                     //1. 获取消息队列中的权益记录信息   XREADGROUP GROUP g1 c1 COUNT 1 BLOCK 2000 STREAMS streams.order >
                     List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
-                            Consumer.from("gy-benefit-order-group", "gy-benefit-order-consumer"),
+                            Consumer.from(STREAM_GROUP, consumerName),
                             StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
                             StreamOffset.create(queueName, ReadOffset.lastConsumed())
                     );
@@ -96,7 +131,7 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
                     //4.  如果获取成功，可以领取
                     handleBenefitOrder(benefitOrder);
                     //5. ACK确认  SACK stream.order g1 id
-                    stringRedisTemplate.opsForStream().acknowledge(queueName, "gy-benefit-order-group" , record.getId());
+                    stringRedisTemplate.opsForStream().acknowledge(queueName, STREAM_GROUP, record.getId());
                 } catch (Exception e) {
                     log.error("处理权益记录异常", e);
                     handlePendingList();
@@ -106,12 +141,12 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
     }
 
     private void handlePendingList() {
-        String queueName = "gy:stream:benefit-orders";
+        String queueName = STREAM_KEY;
         while (true) {
             try {
                 //1. 获取pending-list中的权益记录信息   XREADGROUP GROUP g1 c1 COUNT 1 STREAMS streams.order 0
                 List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
-                        Consumer.from("gy-benefit-order-group", "gy-benefit-order-consumer"),
+                        Consumer.from(STREAM_GROUP, consumerName),
                         StreamReadOptions.empty().count(1),
                         StreamOffset.create(queueName, ReadOffset.from("0"))
                 );
@@ -127,7 +162,7 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
                 //4.  如果获取成功，可以领取
                 handleBenefitOrder(benefitOrder);
                 //5. ACK确认  SACK stream.order g1 id
-                stringRedisTemplate.opsForStream().acknowledge(queueName, "gy-benefit-order-group" , record.getId());
+                stringRedisTemplate.opsForStream().acknowledge(queueName, STREAM_GROUP, record.getId());
             } catch (Exception e) {
                 log.error("处理pending-list权益记录异常", e);
                 try {
@@ -173,14 +208,12 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
         }
 
         try {
-            proxy.createBenefitOrder(benefitOrder);
+            transactionTemplate.executeWithoutResult(status -> createBenefitOrder(benefitOrder));
         } finally {
             //释放锁
             lock.unlock();
         }
     }
-
-    private IBenefitOrderService proxy;
 
     /**
      * 限时权益权益
@@ -190,6 +223,21 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
      */
     @Override
     public ApiResult claimLimitedBenefit(Long benefitId) {
+        LimitedBenefit limitedBenefit = limitedBenefitService.getById(benefitId);
+        if (limitedBenefit == null) {
+            return ApiResult.fail("限时权益不存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (limitedBenefit.getStartsAt().isAfter(now)) {
+            return ApiResult.fail("限时权益尚未开始");
+        }
+        if (limitedBenefit.getEndsAt().isBefore(now)) {
+            return ApiResult.fail("限时权益已结束");
+        }
+        String stockKey = "gy:limited-benefit:stock:" + benefitId;
+        if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(stockKey))) {
+            stringRedisTemplate.opsForValue().setIfAbsent(stockKey, limitedBenefit.getStock().toString());
+        }
         // 获取成员
         Long memberId = MemberContext.getMember().getId();
         //获取权益记录id
@@ -202,17 +250,27 @@ public class BenefitOrderServiceImpl extends ServiceImpl<BenefitOrderMapper, Ben
                 benefitId.toString(), memberId.toString(),String.valueOf(orderId)
         );
         // 2. 判断结果是否为0
+        if (result == null) {
+            return ApiResult.fail("权益领取服务暂不可用");
+        }
         int r = result.intValue();
         if (r != 0) {
             // 2.1 不为0，代表没有领取资格
             return ApiResult.fail(r == 1 ? "库存不足" : "不能重复领取");
         }
 
-        // 3. 获取代理对象
-        proxy = (IBenefitOrderService) AopContext.currentProxy();
-        // 4. 返回权益记录 id
+        // 3. 返回权益记录 id，客户端可通过查询接口确认异步落库状态
         return ApiResult.ok(orderId);
 
+    }
+
+    @Override
+    public ApiResult queryOrder(Long orderId) {
+        BenefitOrder order = getById(orderId);
+        if (order == null || !order.getMemberId().equals(MemberContext.getMember().getId())) {
+            return ApiResult.fail("权益记录不存在");
+        }
+        return ApiResult.ok(order);
     }
 
 

@@ -35,8 +35,8 @@ CREATE TABLE `gy_post`  (
 -- ----------------------------
 -- Records of gy_post
 -- ----------------------------
-INSERT INTO `gy_post` VALUES (4, 4, 2, '园区夜晚的浪漫角落｜光屿西餐厅体验', '/assets/posts/post-4.jpg', '下班后在园区发现了一处安静的社区餐厅。空间设计简洁，服务细致，很适合成员聚会和放松。', 1, 104, '2021-12-28 19:50:01', '2022-03-10 14:26:34');
-INSERT INTO `gy_post` VALUES (5, 1, 2, '校园咖啡新据点｜构域咖啡实验室', '/assets/posts/post-5.jpg', '学习和工作间隙可以来这里坐坐，饮品选择丰富，空间安静，适合自习和小组讨论。', 1, 0, '2021-12-28 20:57:49', '2022-03-10 09:21:39');
+INSERT INTO `gy_post` VALUES (4, 4, 2, '园区夜晚的浪漫角落｜光屿西餐厅体验', '/assets/generated/western-restaurant.png', '下班后在园区发现了一处安静的社区餐厅。空间设计简洁，服务细致，很适合成员聚会和放松。', 1, 104, '2021-12-28 19:50:01', '2022-03-10 14:26:34');
+INSERT INTO `gy_post` VALUES (5, 1, 2, '校园咖啡新据点｜构域咖啡实验室', '/assets/generated/campus-coffee-lab.png', '学习和工作间隙可以来这里坐坐，饮品选择丰富，空间安静，适合自习和小组讨论。', 1, 0, '2021-12-28 20:57:49', '2022-03-10 09:21:39');
 INSERT INTO `gy_post` VALUES (6, 10, 1, '周末好去处｜回声音乐空间体验', '/assets/posts/post-6.jpg', '园区周末活动的新选择，交通方便，空间宽敞，适合和朋友一起放松。', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:41');
 INSERT INTO `gy_post` VALUES (7, 10, 1, '社区文体活动记录｜在构域遇见同好', '/assets/posts/post-7.jpg', '参加了一次社区成员组织的文体活动，认识了不少新朋友，记录这次轻松的周末体验。', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:42');
 
@@ -71,7 +71,8 @@ CREATE TABLE `gy_follow_relation`  (
   `member_id` bigint(20) UNSIGNED NOT NULL COMMENT '成员id',
   `target_member_id` bigint(20) UNSIGNED NOT NULL COMMENT '被关注成员id',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_member_target` (`member_id`, `target_member_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
 
 -- ----------------------------
@@ -123,10 +124,10 @@ CREATE TABLE `gy_merchant`  (
 -- ----------------------------
 -- Records of gy_merchant
 -- ----------------------------
-INSERT INTO `gy_merchant` VALUES (1, '构域咖啡实验室', 1, '/assets/merchants/merchant-1-1.jpg,/assets/merchants/merchant-1-2.jpg', '星海大学东区', '学府路18号创新中心1层', 120.149192, 30.316078, 80, 0000004215, 0000003035, 37, '10:00-22:00', '2021-12-22 18:10:39', '2022-01-13 17:32:19');
+INSERT INTO `gy_merchant` VALUES (1, '构域咖啡实验室', 1, '/assets/generated/campus-coffee-lab.png,/assets/merchants/merchant-1-2.jpg', '星海大学东区', '学府路18号创新中心1层', 120.149192, 30.316078, 80, 0000004215, 0000003035, 37, '10:00-22:00', '2021-12-22 18:10:39', '2022-01-13 17:32:19');
 INSERT INTO `gy_merchant` VALUES (2, '星海园区烤肉工坊', 1, '/assets/merchants/merchant-2-1.jpg,/assets/merchants/merchant-2-2.jpg', '科技园A区', '科创大道66号A3栋', 120.151505, 30.333422, 85, 0000002160, 0000001460, 46, '11:30-03:00', '2021-12-22 19:00:13', '2022-01-11 16:12:26');
 INSERT INTO `gy_merchant` VALUES (3, '青禾社区食堂', 1, '/assets/merchants/merchant-3-1.jpg,/assets/merchants/merchant-3-2.jpg', '星海大学生活区', '青春路8号生活中心2层', 120.151954, 30.32497, 61, 0000012035, 0000008045, 47, '10:30-21:00', '2021-12-22 19:10:05', '2022-01-11 16:12:42');
-INSERT INTO `gy_merchant` VALUES (4, '光屿西餐厅', 1, '/assets/merchants/merchant-4-1.jpg,/assets/merchants/merchant-4-2.jpg', '科技园创意街区', '光屿路12号创意街区B1', 120.146659, 30.312742, 290, 0000013519, 0000009529, 49, '11:00-22:00', '2021-12-22 19:17:15', '2022-01-11 16:12:51');
+INSERT INTO `gy_merchant` VALUES (4, '光屿西餐厅', 1, '/assets/generated/western-restaurant.png,/assets/merchants/merchant-4-2.jpg', '科技园创意街区', '光屿路12号创意街区B1', 120.146659, 30.312742, 290, 0000013519, 0000009529, 49, '11:00-22:00', '2021-12-22 19:17:15', '2022-01-11 16:12:51');
 INSERT INTO `gy_merchant` VALUES (5, '云栖共享厨房', 1, '/assets/merchants/merchant-5-1.jpg,/assets/merchants/merchant-5-2.jpg', '星海大学西区', '云栖路20号共享空间1层', 120.15778, 30.310633, 104, 0000004125, 0000002764, 49, '10:00-07:00', '2021-12-22 19:20:58', '2022-01-11 16:13:01');
 INSERT INTO `gy_merchant` VALUES (6, '北辰暖锅', 1, '/assets/merchants/merchant-6-1.jpg,/assets/merchants/merchant-6-2.jpg', '北辰社区', '北辰路9号社区中心', 120.148603, 30.318618, 130, 0000009531, 0000007324, 46, '11:00-13:50,17:00-20:50', '2021-12-22 19:24:53', '2022-01-11 16:13:09');
 INSERT INTO `gy_merchant` VALUES (7, '拾光烤鱼社', 1, '/assets/merchants/merchant-7-1.jpg,/assets/merchants/merchant-7-2.jpg', '科技园B区', '科创大道88号B2栋', 120.124691, 30.336819, 85, 0000002631, 0000001320, 47, '00:00-24:00', '2021-12-22 19:40:52', '2022-01-11 16:13:19');
@@ -1271,7 +1272,8 @@ CREATE TABLE `gy_benefit_order`  (
   `use_time` timestamp NULL DEFAULT NULL COMMENT '核销时间',
   `refund_time` timestamp NULL DEFAULT NULL COMMENT '退款时间',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_member_benefit` (`member_id`, `benefit_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
 
 -- ----------------------------

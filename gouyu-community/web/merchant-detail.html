@@ -224,10 +224,20 @@
         // 限时领取领取
         axios.post("/benefit-order/limited/" + id)
         .then(({data}) => {
-          // 领取成功，这里输出权益记录id，支付功能TODO
-          this.$message.success("领取成功，权益记录id：" + data)
+          this.waitForOrder(data, 0)
         })
         .catch(this.$message.error)
+      },
+      waitForOrder(orderId, attempt) {
+        axios.get("/benefit-order/" + orderId)
+          .then(() => this.$message.success("领取成功，权益记录id：" + orderId))
+          .catch(() => {
+            if (attempt < 9) {
+              setTimeout(() => this.waitForOrder(orderId, attempt + 1), 300)
+            } else {
+              this.$message.warning("领取请求已受理，请稍后查看权益记录")
+            }
+          })
       }
     }
   })

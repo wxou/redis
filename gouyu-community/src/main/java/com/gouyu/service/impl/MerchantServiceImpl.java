@@ -16,6 +16,7 @@ import com.gouyu.utils.RedisCachePayload;
 import com.gouyu.utils.GouYuConstants;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.Point;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.redis.connection.RedisGeoCommands;
@@ -246,18 +247,50 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
      */
     @Override
     @Transactional
+    public ApiResult saveMerchant(Merchant merchant) {
+        if (merchant.getCategoryId() == null || merchant.getX() == null || merchant.getY() == null) {
+            return ApiResult.fail("商户分类和坐标不能为空");
+        }
+        if (!save(merchant)) {
+            return ApiResult.fail("新增商户失败");
+        }
+        addMerchantToGeo(merchant);
+        return ApiResult.ok(merchant.getId());
+    }
+
+    @Override
+    @Transactional
     public ApiResult update(Merchant merchant) {
         Long id = merchant.getId();
         if (id == null){
             return ApiResult.fail("商户id不能为空");
         }
-        String key = RedisKeys.CACHE_MERCHANT_KEY + merchant.getId();
+        Merchant oldMerchant = getById(id);
+        if (oldMerchant == null) {
+            return ApiResult.fail("商户不存在");
+        }
+        String key = RedisKeys.CACHE_MERCHANT_KEY + id;
 
         //1.更新数据库
-        updateById( merchant);
+        if (!updateById(merchant)) {
+            return ApiResult.fail("更新商户失败");
+        }
         //2.删除缓存
         stringRedisTemplate.delete(key);
+        Merchant updatedMerchant = getById(id);
+        if (!oldMerchant.getCategoryId().equals(updatedMerchant.getCategoryId())) {
+            stringRedisTemplate.opsForGeo().remove(
+                    RedisKeys.MERCHANT_GEO_KEY + oldMerchant.getCategoryId(), id.toString());
+        }
+        addMerchantToGeo(updatedMerchant);
         return ApiResult.ok();
+    }
+
+    private void addMerchantToGeo(Merchant merchant) {
+        stringRedisTemplate.opsForGeo().add(
+                RedisKeys.MERCHANT_GEO_KEY + merchant.getCategoryId(),
+                new Point(merchant.getX(), merchant.getY()),
+                merchant.getId().toString());
     }
 
     @Override

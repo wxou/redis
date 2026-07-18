@@ -24,7 +24,7 @@
   <div class="login-container">
     <div class="header">
       <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
-      <div class="header-title">密码登录&nbsp;&nbsp;&nbsp;</div>
+    <div class="header-title">密码登录暂未开放&nbsp;&nbsp;&nbsp;</div>
     </div>
     <div class="content">
       <div class="login-form">
@@ -72,16 +72,7 @@
           this.$message.error("请先确认阅读成员协议！");
           return;
         }
-        axios.post("/member/login", this.form)
-          .then(({data}) => {
-            if(data){
-              // 保存成员信息到session
-              sessionStorage.setItem("token", data);
-            }
-            // 跳转到首页
-            location.href = "/info.html"
-          })
-          .catch(err => this.$message.error(err))
+        this.$message.warning("当前未接入密码认证，请使用验证码登录");
       },
       goBack(){
         history.back();

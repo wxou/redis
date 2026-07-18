@@ -42,11 +42,8 @@
       <div class="divider"></div>
       <div class="info-item">
         <div class="info-label">个人介绍</div>
-        <div class="info-btn">
-          <div style="overflow: hidden; width: 150px;text-align: right">{{info.introduce || '介绍一下自己'}}</div>
-          <div>
-            <i class="el-icon-arrow-right"></i>
-          </div>
+        <div class="info-btn" style="width: 70%">
+          <el-input v-model="info.introduce" maxlength="128" placeholder="介绍一下自己"></el-input>
         </div>
       </div>
     </div>
@@ -54,24 +51,24 @@
       <div class="info-item">
         <div class="info-label">性别</div>
         <div class="info-btn">
-          <div>{{info.gender || '选择'}}</div>
-          <div><i class="el-icon-arrow-right"></i></div>
+          <el-select v-model="info.gender" placeholder="选择">
+            <el-option label="男" :value="false"></el-option>
+            <el-option label="女" :value="true"></el-option>
+          </el-select>
         </div>
       </div>
       <div class="divider"></div>
       <div class="info-item">
         <div class="info-label">城市</div>
-        <div class="info-btn">
-          <div>{{info.city || '选择'}}</div>
-          <div><i class="el-icon-arrow-right"></i></div>
+        <div class="info-btn" style="width: 70%">
+          <el-input v-model="info.city" maxlength="64" placeholder="所在城市"></el-input>
         </div>
       </div>
       <div class="divider"></div>
       <div class="info-item">
         <div class="info-label">生日</div>
         <div class="info-btn">
-          <div>{{info.birthday || '添加'}}</div>
-          <div><i class="el-icon-arrow-right"></i></div>
+          <el-date-picker v-model="info.birthday" type="date" value-format="yyyy-MM-dd" placeholder="选择生日"></el-date-picker>
         </div>
       </div>
     </div>
@@ -92,6 +89,9 @@
           <div><i class="el-icon-arrow-right"></i></div>
         </div>
       </div>
+    </div>
+    <div style="padding: 15px">
+      <el-button type="success" style="width: 100%" @click="saveInfo">保存资料</el-button>
     </div>
   </div>
   <foot-bar :active-btn="4"></foot-bar>
@@ -119,7 +119,10 @@
         axios.get("/member/me")
         .then(({data}) => {
           this.member = data;
-          this.info = JSON.parse(sessionStorage.getItem("memberInfo")) || {}
+          return axios.get("/member/info/" + data.id)
+        })
+        .then(({data}) => {
+          this.info = data || {}
         })
         .catch(err => {
           this.$message.error(err);
@@ -128,6 +131,15 @@
       },
       goBack(){
         history.back();
+      },
+      saveInfo(){
+        axios.put("/member/info", this.info)
+          .then(() => {
+            sessionStorage.setItem("memberInfo", JSON.stringify(this.info));
+            this.$message.success("资料已保存");
+            setTimeout(() => location.href = "/info.html", 300);
+          })
+          .catch(this.$message.error)
       }
     },
 

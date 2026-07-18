@@ -13,6 +13,7 @@ import com.gouyu.utils.MemberContext;
 import com.gouyu.utils.RedisKeys;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -38,12 +39,22 @@ public class FollowRelationServiceImpl extends ServiceImpl<FollowRelationMapper,
     private IMemberService memberService;
 
     @Override
+    @Transactional
     public ApiResult follow(Long targetMemberId, Boolean isFollowing) {
         // 1. 获取当前成员
         Long memberId = MemberContext.getMember().getId();
+        if (memberId.equals(targetMemberId)) {
+            return ApiResult.fail("不能关注自己");
+        }
+        if (memberService.getById(targetMemberId) == null) {
+            return ApiResult.fail("成员不存在");
+        }
         String key = RedisKeys.FOLLOWING_KEY + memberId;
         // 2. 判断是关注还是取关
         if (isFollowing) {
+            if (query().eq("member_id", memberId).eq("target_member_id", targetMemberId).count() > 0) {
+                return ApiResult.ok();
+            }
             // 3. 关注，新增数据
             FollowRelation followRelation = new FollowRelation();
             followRelation.setMemberId(memberId);
@@ -62,6 +73,7 @@ public class FollowRelationServiceImpl extends ServiceImpl<FollowRelationMapper,
                 stringRedisTemplate.opsForSet().remove(key , targetMemberId.toString());
             }
         }
+        stringRedisTemplate.opsForValue().set(RedisKeys.FOLLOWING_LOADED_KEY + memberId, "1");
         return ApiResult.ok();
     }
 
@@ -80,9 +92,9 @@ public class FollowRelationServiceImpl extends ServiceImpl<FollowRelationMapper,
     public ApiResult commonFollows(Long id) {
         // 1. 获取当前成员
         Long memberId = MemberContext.getMember().getId();
-        String key = RedisKeys.FOLLOWING_KEY + memberId;
+        String key = ensureFollowingSet(memberId);
         // 2. 求交集
-        String key2 = RedisKeys.FOLLOWING_KEY + id;
+        String key2 = ensureFollowingSet(id);
         Set<String> intersect = stringRedisTemplate.opsForSet().intersect(key, key2);
         if (intersect == null || intersect.isEmpty()){
             // 无交集
@@ -96,5 +108,21 @@ public class FollowRelationServiceImpl extends ServiceImpl<FollowRelationMapper,
                 .map(member -> BeanUtil.copyProperties(member, MemberDTO.class))
                 .collect(Collectors.toList());
         return ApiResult.ok(members);
+    }
+
+    private String ensureFollowingSet(Long memberId) {
+        String key = RedisKeys.FOLLOWING_KEY + memberId;
+        String loadedKey = RedisKeys.FOLLOWING_LOADED_KEY + memberId;
+        if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(loadedKey))) {
+            List<FollowRelation> relations = query().eq("member_id", memberId).list();
+            if (!relations.isEmpty()) {
+                String[] targets = relations.stream()
+                        .map(relation -> relation.getTargetMemberId().toString())
+                        .toArray(String[]::new);
+                stringRedisTemplate.opsForSet().add(key, targets);
+            }
+            stringRedisTemplate.opsForValue().set(loadedKey, "1");
+        }
+        return key;
     }
 }

@@ -126,7 +126,7 @@
         };
         axios
           .post("/upload/post", formData, config)
-          .then(({data}) => this.fileList.push('/imgs' + data))
+          .then(({data}) => this.fileList.push(data))
           .catch(this.$message.error);
       },
       deletePic(i) {

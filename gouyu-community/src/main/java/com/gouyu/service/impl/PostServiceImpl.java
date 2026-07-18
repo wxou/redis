@@ -1,7 +1,6 @@
 package com.gouyu.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gouyu.dto.ApiResult;
@@ -18,15 +17,17 @@ import com.gouyu.service.IMemberService;
 import com.gouyu.utils.RedisKeys;
 import com.gouyu.utils.GouYuConstants;
 import com.gouyu.utils.MemberContext;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -58,10 +59,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         // 获取当前页数据
         List<Post> records = page.getRecords();
         // 查询成员
-        records.forEach(post -> {
-            this.populatePostMember(post);
-            this.markLikeStatus(post);
-        });
+        populatePostMembers(records);
+        records.forEach(this::markLikeStatus);
         return ApiResult.ok(records);
     }
 
@@ -94,9 +93,13 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
     }
 
     @Override
+    @Transactional
     public ApiResult likePost(Long id) {
         //1. 获取登录成员
         Long memberId = MemberContext.getMember().getId();
+        if (getById(id) == null) {
+            return ApiResult.fail("动态不存在");
+        }
         //2. 判断当前登录成员是否已经点赞
         String key = RedisKeys.POST_LIKED_KEY + id;
         Double score = stringRedisTemplate.opsForZSet().score(key, memberId.toString());
@@ -111,9 +114,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         }else{
             //4. 如果已点赞，取消点赞
             //4.1 数据库点赞数 - 1
-            boolean isSuccess = update().setSql("like_count = like_count - 1").eq("id", id).update();
+            boolean isSuccess = update().setSql("like_count = like_count - 1")
+                    .eq("id", id).gt("like_count", 0).update();
             //4.2 把成员从Redis的set集合中移除
-            stringRedisTemplate.opsForZSet().remove(key, memberId.toString());
+            if (isSuccess) {
+                stringRedisTemplate.opsForZSet().remove(key, memberId.toString());
+            }
         }
 
         return ApiResult.ok();
@@ -123,7 +129,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
     public ApiResult queryPostLikes(Long id) {
         String key = RedisKeys.POST_LIKED_KEY + id;
         // 1. 查询top5的点赞成员 zrange key 0 4
-        Set<String> top5 = stringRedisTemplate.opsForZSet().range(key , 0, 4);
+        Set<String> top5 = stringRedisTemplate.opsForZSet().reverseRange(key , 0, 4);
         if (top5 == null || top5.isEmpty()) {
             return ApiResult.ok();
         }
@@ -197,12 +203,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         String idStr = StrUtil.join(",", ids);
         List<Post> posts = query().in("id", ids).last("ORDER BY FIELD(id," + idStr + ")").list();
 
-        for (Post post : posts) {
-            // 5.1 查询post有关的成员
-            populatePostMember(post);
-            // 5.2 查询post是否被点赞
-            markLikeStatus(post);
-        }
+        populatePostMembers(posts);
+        posts.forEach(this::markLikeStatus);
 
         // 6. 封装并返回
         CursorPageResult r = new CursorPageResult();
@@ -218,5 +220,21 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         Member member = memberService.getById(memberId);
         post.setAuthorName(member.getDisplayName());
         post.setAuthorAvatarUrl(member.getAvatarUrl());
+    }
+
+    private void populatePostMembers(List<Post> posts) {
+        if (posts == null || posts.isEmpty()) {
+            return;
+        }
+        Set<Long> memberIds = posts.stream().map(Post::getMemberId).collect(Collectors.toSet());
+        Map<Long, Member> members = memberService.listByIds(memberIds).stream()
+                .collect(Collectors.toMap(Member::getId, Function.identity()));
+        for (Post post : posts) {
+            Member member = members.get(post.getMemberId());
+            if (member != null) {
+                post.setAuthorName(member.getDisplayName());
+                post.setAuthorAvatarUrl(member.getAvatarUrl());
+            }
+        }
     }
 }

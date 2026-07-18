@@ -5,6 +5,7 @@ import com.gouyu.dto.ApiResult;
 import com.gouyu.service.IBenefitOrderService;
 import com.gouyu.service.impl.BenefitOrderServiceImpl;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,5 +35,10 @@ public class BenefitOrderController {
     @PostMapping("limited/{id}")
     public ApiResult claimLimitedBenefit(@PathVariable("id") Long benefitId) {
         return benefitOrderService.claimLimitedBenefit(benefitId);
+    }
+
+    @GetMapping("/{id}")
+    public ApiResult queryOrder(@PathVariable("id") Long orderId) {
+        return benefitOrderService.queryOrder(orderId);
     }
 }

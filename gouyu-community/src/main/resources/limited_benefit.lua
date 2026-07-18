@@ -15,7 +15,8 @@ local orderKey = "gy:limited-benefit:order:" .. benefitId
 
 -- 3.脚本业务
 -- 3.1 判断库存是否充足 get stockKey
-if (tonumber(redis.call("get", stockKey)) <= 0) then
+local stock = tonumber(redis.call("get", stockKey))
+if (not stock or stock <= 0) then
     -- 3.1.1 库存不足，返回1
     return 1
 end
