@@ -51,7 +51,7 @@ public class MemberProfile implements Serializable {
     /**
      * 关注的人的数量
      */
-    private Integer followRelationee;
+    private Integer followee;
 
     /**
      * 性别，0：男，1：女

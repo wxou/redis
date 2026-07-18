@@ -59,9 +59,8 @@ public class MemberController {
      * @return 无
      */
     @PostMapping("/logout")
-    public ApiResult logout(){
-        // TODO 实现登出功能
-        return ApiResult.fail("功能未完成");
+    public ApiResult logout(@RequestHeader("authorization") String token){
+        return memberService.logout(token);
     }
 
     @GetMapping("/me")

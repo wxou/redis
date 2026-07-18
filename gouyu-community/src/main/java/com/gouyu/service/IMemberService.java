@@ -31,6 +31,8 @@ public interface IMemberService extends IService<Member> {
      */
     ApiResult login(LoginRequest loginForm, HttpSession session);
 
+    ApiResult logout(String token);
+
     ApiResult checkIn();
 
     ApiResult checkInCount();

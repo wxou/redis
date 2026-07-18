@@ -11,7 +11,7 @@ local benefitOrderId = ARGV[3]
 -- 2.1 库存key
 local stockKey = "gy:limited-benefit:stock:" .. benefitId
 -- 2.2 权益领取去重key
-local orderKey = "gy:limited-benefit:order:" .. memberId
+local orderKey = "gy:limited-benefit:order:" .. benefitId
 
 -- 3.脚本业务
 -- 3.1 判断库存是否充足 get stockKey

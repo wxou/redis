@@ -116,6 +116,12 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
     }
 
     @Override
+    public ApiResult logout(String token) {
+        stringRedisTemplate.delete(RedisKeys.AUTH_SESSION_KEY + token);
+        return ApiResult.ok();
+    }
+
+    @Override
     public ApiResult checkIn() {
         // 1. 获取当前登录成员
         Long memberId = MemberContext.getMember().getId();

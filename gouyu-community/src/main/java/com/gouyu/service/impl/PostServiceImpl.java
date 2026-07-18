@@ -103,7 +103,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         if (score == null) {
             //3. 如果未点赞，可以点赞
             //3.1 数据库点赞数 + 1
-            boolean isSuccess = update().setSql("likeCount = likeCount + 1").eq("id", id).update();
+            boolean isSuccess = update().setSql("like_count = like_count + 1").eq("id", id).update();
             //3.2 保存成员到Redis的set集合  zadd key value score
             if (isSuccess) {
                 stringRedisTemplate.opsForZSet().add(key, memberId.toString(), System.currentTimeMillis());
@@ -111,7 +111,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements IP
         }else{
             //4. 如果已点赞，取消点赞
             //4.1 数据库点赞数 - 1
-            boolean isSuccess = update().setSql("likeCount = likeCount - 1").eq("id", id).update();
+            boolean isSuccess = update().setSql("like_count = like_count - 1").eq("id", id).update();
             //4.2 把成员从Redis的set集合中移除
             stringRedisTemplate.opsForZSet().remove(key, memberId.toString());
         }
