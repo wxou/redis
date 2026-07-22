@@ -67,3 +67,20 @@ mvn.cmd spring-boot:run
 项目 Nginx 位于 `deploy/nginx`，启动后通过 `http://127.0.0.1:8080/` 访问前端。
 
 本地开发若暂时没有短信服务，可保持 `GOUYU_EXPOSE_LOGIN_CODE=true`；任何公开或生产部署都必须设置为 `false`。
+
+## 6. 2026-07-22 限时权益可靠性追加联调
+
+环境保持为本机 MySQL 8.0.45、虚拟机 Redis 6.2.6（`192.168.100.128:6379`）、Spring Boot 8081 和项目 Nginx 8080。凭据只通过用户级 `GOUYU_*` 环境变量注入。
+
+| 场景 | 结果 | 可核对状态 |
+| --- | --- | --- |
+| Lua/Stream 脚本 | 通过 | 6 项测试，0 失败、0 跳过 |
+| 正常领取 | 通过 | `PENDING -> SUCCESS`；MySQL 订单与处理表存在；Redis/MySQL 库存同步扣减 |
+| 确定失败补偿 | 通过 | MySQL 无订单，处理表 `COMPENSATED/DATABASE_OUT_OF_STOCK`；Redis 库存恢复、资格和请求归属清除 |
+| 跨消费者接管 | 通过 | 模拟 `abandoned-codex-consumer` 持有 Pending，当前实例通过 `XCLAIM` 接管 |
+| 毒消息隔离 | 通过 | 畸形消息处理 2 次后进入 DLQ，主 Stream 与 Pending 为 0 |
+| 死信对账 | 通过 | Redis DLQ 对账后为 0，MySQL 保留 `DEAD_LETTER/INVALID_MESSAGE` 历史 |
+| Nginx 前后端链路 | 通过 | 页面 200；`/api` 完成登录、新增权益、领取和状态轮询，终态 `SUCCESS` |
+| 数据清理 | 通过 | 三组测试成员、权益、订单、处理记录和精确 Redis Key 清零 |
+
+本轮没有使用 Outbox。当前跨 Redis/MySQL 失败依靠有限重试、数据库幂等确认、死信和请求所有权补偿最终收敛，不表述为跨资源强一致。

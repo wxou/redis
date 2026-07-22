@@ -44,7 +44,7 @@
 | `GOUYU_MYSQL_URL` | `jdbc:mysql://127.0.0.1:3306/gouyu?...` | MySQL 连接地址 |
 | `GOUYU_MYSQL_USERNAME` | `root` | MySQL 用户名 |
 | `GOUYU_MYSQL_PASSWORD` | 空 | MySQL 密码 |
-| `GOUYU_REDIS_HOST` | `127.0.0.1` | Redis 地址 |
+| `GOUYU_REDIS_HOST` | `192.168.100.128` | Redis 地址 |
 | `GOUYU_REDIS_PORT` | `6379` | Redis 端口 |
 | `GOUYU_REDIS_PASSWORD` | 空 | Redis 密码 |
 | `GOUYU_IMAGE_UPLOAD_DIR` | `web/assets` 的绝对路径 | 图片上传根目录 |
@@ -57,6 +57,10 @@
 | `GOUYU_AUTH_LOGIN_IP_LIMIT` | `30` | 登录限流窗口内同 IP 请求上限 |
 | `GOUYU_AUTH_AUDIT_RETENTION_DAYS` | `180` | 认证审计日志保留天数 |
 | `GOUYU_AUTH_INITIALIZE_AUDIT_SCHEMA` | `true` | 启动时非破坏性创建缺失的认证审计表 |
+| `GOUYU_BENEFIT_ORDER_STATUS_TTL_HOURS` | `168` | 异步订单 Redis 状态保留时间 |
+| `GOUYU_BENEFIT_ORDER_MAX_RETRIES` | `5` | 消息最大处理次数 |
+| `GOUYU_BENEFIT_ORDER_CLAIM_MIN_IDLE_MILLIS` | `30000` | Pending 消息允许接管的最小空闲时间 |
+| `GOUYU_BENEFIT_ORDER_INITIALIZE_SCHEMA` | `true` | 启动时非破坏性创建订单处理归档表 |
 
 PowerShell 示例：
 
@@ -82,6 +86,14 @@ mysql -h 127.0.0.1 -u root -p < src/main/resources/db/gouyu.sql
 ```powershell
 mysql -h 127.0.0.1 -u root -p gouyu < src/main/resources/db/migration/20260718_auth_hardening.sql
 ```
+
+异步权益订单可靠性升级可单独执行：
+
+```powershell
+mysql -h 127.0.0.1 -u root -p gouyu < src/main/resources/db/migration/20260722_benefit_order_reliability.sql
+```
+
+应用默认也会以非破坏方式检查并创建缺失的订单处理归档表。
 
 ## 启动
 

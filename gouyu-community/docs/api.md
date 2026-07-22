@@ -70,6 +70,25 @@
 | POST | `/benefit-order/limited/{benefitId}` | 领取限时权益 |
 | GET | `/benefit-order/{orderId}` | 查询当前成员的异步权益订单 |
 
+领取成功表示请求已被 Redis 原子受理，响应 `data` 示例：
+
+```json
+{"orderId":75249025321795585,"status":"PENDING","message":"领取请求已受理"}
+```
+
+订单查询返回状态 DTO。公开状态包括 `PENDING`、`PROCESSING`、`RETRYING`、`SUCCESS`、`FAILED`；成功时 `order` 包含 MySQL 订单，失败时 `message` 说明是否已恢复库存和资格。
+
+```json
+{
+  "orderId": 75249025321795585,
+  "status": "SUCCESS",
+  "message": "领取成功",
+  "retryCount": 0,
+  "updatedAt": "2026-07-22T18:44:39",
+  "order": {"id": 75249025321795585, "memberId": 1017, "benefitId": 20}
+}
+```
+
 ## 动态 `/post`
 
 | 方法 | 路径 | 说明 |

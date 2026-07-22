@@ -17,7 +17,10 @@
 | `gy:cache:merchant-category:list` | String | 3600 分钟 | 分类列表缓存 |
 | `gy:lock:merchant:{id}` | String | 10 秒 | 商户缓存重建锁 |
 | `gy:limited-benefit:stock:{id}` | String | 无固定 TTL | 限时权益库存 |
+| `gy:limited-benefit:meta:{id}` | Hash | 无固定 TTL | 限时权益开始、结束时间与启用状态 |
 | `gy:limited-benefit:order:{id}` | Set | 无固定 TTL | 限时权益领取成员集合 |
+| `gy:limited-benefit:request:{id}` | Hash | 无固定 TTL | 成员到订单 ID 的预留所有权 |
+| `gy:benefit-order:status:{orderId}` | Hash | 默认 168 小时 | 异步订单处理状态、次数与提示 |
 | `gy:post:liked:{postId}` | ZSet | 无固定 TTL | 动态点赞成员与时间 |
 | `gy:feed:{memberId}` | ZSet | 无固定 TTL | 成员关注流 |
 | `gy:following:{memberId}` | Set | 无固定 TTL | 成员关注集合 |
@@ -26,7 +29,8 @@
 | `gy:check-in:{memberId}:{yyyyMM}` | Bitmap | 无固定 TTL | 月度打卡位图 |
 | `gy:id:benefit-order:{yyyy:MM:dd}` | String | 无固定 TTL | 权益记录分布式 ID 日计数器 |
 | `gy:stream:benefit-orders` | Stream | 无固定 TTL | 权益领取消息流 |
-| `gy:lock:benefit-order:{memberId}` | Lock | 看门狗/业务释放 | 成员权益领取锁 |
+| `gy:stream:benefit-orders:dlq` | Stream | 对账完成后删除 | 超过处理次数的失败消息 |
+| `gy:lock:benefit-order:{memberId}:{benefitId}` | Lock | 看门狗/业务释放 | 成员与权益业务键锁 |
 
 ## Stream 约定
 
@@ -35,6 +39,8 @@
 - 消费者：`gy-benefit-order-consumer-{实例随机后缀}`
 - 消息字段：`id`、`memberId`、`benefitId`
 - 应用启动时幂等创建 Stream 与消费组，不再依赖外部手工初始化。
+- 未确认消息由组级 `XPENDING` 扫描并通过 `XCLAIM` 接管，不局限于当前消费者。
+- 成功、补偿或死信迁移后原子执行 `XACK + XDEL`；长期处理历史写入 MySQL。
 
 ## 隔离原则
 

@@ -53,10 +53,10 @@
 
 ## 3. 当前完成状态
 
-截至 2026-07-18，项目已经完成以下交付：
+截至 2026-07-22，项目已经完成以下交付：
 
 - 工程、包名、启动类和 Maven 坐标全部切换为构域命名；
-- 独立 `gouyu` 数据库、11 张业务表和 1 张认证审计表已经建立；
+- 独立 `gouyu` 数据库、12 张业务表和 1 张认证审计表已经建立；
 - Redis 运行数据统一进入 `gy:*` 命名空间；
 - 领域对象、Service、Mapper、Controller、DTO 和工具类完成构域语义改造；
 - API 资源切换为 `/member`、`/merchant`、`/benefit`、`/post` 等构域资源；
@@ -64,7 +64,7 @@
 - Windows Nginx 1.18 已复制到项目内，可直接托管前端并代理后端；
 - MySQL、Redis、后端和 Nginx 已完成真实环境启动验证；
 - 原有 32 个可调用路由对应的 42 个端到端业务场景全部通过；本轮扩展为 35 个路由，并新增 18 项认证安全联调断言；
-- 异步权益订单已经验证 Redis 扣减、Stream 投递、消费者处理、MySQL 落库和库存一致性；
+- 异步权益订单已验证正常落库、确定失败补偿、跨消费者 Pending 接管、毒消息死信和处理历史归档；
 - 登录、登出、关注、Feed、点赞、上传删除等跨模块链路已经完成联调；
 - 联调产生的测试成员、商户、动态、权益、订单、会话和 Redis 消息均已精确清理；
 - Maven 打包成功并生成可运行 Spring Boot Jar。
@@ -108,12 +108,12 @@ flowchart LR
 
 | 项目 | 数量 |
 | --- | ---: |
-| Java 主源码 | 82 个文件 |
-| Java 测试源码 | 4 个文件 |
+| Java 主源码 | 94 个文件 |
+| Java 测试源码 | 5 个文件 |
 | 静态 HTML 页面 | 10 个 |
 | `web/assets` 本地资源 | 50 个文件 |
-| Markdown 项目文档 | 8 份（含本总结） |
-| MySQL 表 | 12 张（11 张业务表、1 张认证审计表） |
+| Markdown 项目文档 | 10 份（含本总结） |
+| MySQL 表 | 13 张（12 张业务表、1 张认证审计表） |
 | 可调用 API 路由 | 35 个 |
 | 联调覆盖 | 原 42 个业务场景 + 18 项认证安全断言 |
 
@@ -268,7 +268,7 @@ sequenceDiagram
 
 会话以 Redis Hash 保存，默认空闲 TTL 为 120 分钟，请求会滑动续期；Hash 内保存签发时间，最长 7 天后必须重新登录。前端公共 Axios 拦截器从 `sessionStorage` 读取 token，并放入 `authorization` 请求头。
 
-登录支持验证码和密码两种互斥方式。验证码不存在、过期或不匹配都会失败，成功后立即删除；密码要求 8 至 20 位并使用 BCrypt 存储，历史盐值 MD5 在首次验证成功后自动升级。成员可在个人页设置/修改密码，也可通过验证码重置密码。
+登录支持验证码和密码两种互斥方式。验证码不存在、过期或不匹配都会失败，成功后立即删除；密码要求 8 至 20 位并使用 BCrypt 存储。成员可在个人页设置/修改密码，也可通过验证码重置密码。
 
 验证码发送和登录均使用 Redis Lua 原子限流：同手机号 60 秒发送冷却、24 小时 10 次，同 IP 每小时 30 次；登录同 IP 10 分钟 30 次，单账号 15 分钟内失败 5 次后锁定 15 分钟。安全事件写入 `gy_auth_audit_log`，只保存脱敏手机号和 Token SHA-256 摘要，默认保留 180 天。
 
@@ -424,9 +424,9 @@ score  = 点赞时间戳
 
 1. 保存 `gy_benefit`；
 2. 保存 `gy_limited_benefit`；
-3. 把初始库存写入 `gy:limited-benefit:stock:{benefitId}`。
+3. 事务提交后写入 Redis 时间窗元数据与初始库存。
 
-写入前会校验库存必须大于 0、开始时间早于结束时间；领取前再次从 MySQL 校验权益存在以及当前时间位于有效窗口内。Redis 库存 Key 意外缺失时，服务会从 MySQL 库存执行 `SETNX` 恢复，避免 Lua 对空值执行数值比较。
+写入前会校验库存必须大于 0、开始时间早于结束时间。应用启动时补齐缺失的 Redis 元数据和库存；正常领取完全由 Lua 校验时间窗，不查询 MySQL。只有 Redis 状态缺失时，服务才在初始化锁内从 MySQL 恢复并重试一次。
 
 ### 12.2 分布式 ID
 
@@ -447,12 +447,12 @@ score  = 点赞时间戳
 flowchart TD
     A["收到领取请求"] --> B["生成分布式订单 ID"]
     B --> C["执行 Redis Lua"]
-    C --> D{"库存 > 0?"}
-    D -->|否| E["返回 1：库存不足"]
+    C --> D{"时间窗有效且库存 > 0?"}
+    D -->|否| E["返回明确失败码"]
     D -->|是| F{"成员是否已领取该权益?"}
     F -->|是| G["返回 2：重复领取"]
     F -->|否| H["Redis 库存 -1"]
-    H --> I["SADD 已领取成员"]
+    H --> I["写资格Set、请求归属与PENDING状态"]
     I --> J["XADD 订单消息"]
     J --> K["返回 0 和订单 ID"]
 ```
@@ -487,14 +487,15 @@ Consumer gy-benefit-order-consumer-{实例随机后缀}
 
 1. 每次通过消费组读取 1 条消息，最多阻塞 2 秒；
 2. 将消息字段转换成 `BenefitOrder`；
-3. 按成员 ID 获取 Redisson 分布式锁；
+3. 按“成员 ID + 权益 ID”获取 Redisson 分布式锁；
 4. 通过 `TransactionTemplate` 执行事务方法，不依赖首次请求初始化 AOP 代理；
 5. 再次查询 MySQL，进行一人一权益校验；
 6. 使用 `stock = stock - 1 WHERE stock > 0` 扣减数据库库存；
 7. 保存权益订单；
-8. 成功后 ACK 消息。
+8. 事务内写入 `gy_benefit_order_process` 处理历史；
+9. 成功后由 Lua 原子写 `SUCCESS`、执行 `XACK + XDEL`。
 
-发生异常时，消费者进入 Pending List 处理循环，读取未确认消息并重试，成功后再 ACK。
+锁竞争或暂时异常不会 ACK。定时任务按游标扫描消费组 `XPENDING`，使用 `XCLAIM` 接管所有消费者的空闲消息；达到处理上限后先写死信 Stream，再确认并删除原消息。确定 MySQL 未落单时，补偿 Lua 校验请求所有权后原子恢复 Redis 库存、资格并标记补偿终态。
 
 ### 12.5 双重防护
 
@@ -504,10 +505,12 @@ Consumer gy-benefit-order-consumer-{实例随机后缀}
 - Redisson 成员粒度分布式锁；
 - MySQL 重复记录查询；
 - MySQL 条件库存扣减；
-- Redis Stream Pending List 重试。
+- Redis Stream Pending 跨消费者接管、有限重试和死信隔离；
+- Redis 请求所有权与幂等补偿；
+- MySQL 订单处理归档。
 - 数据库 `(member_id, benefit_id)` 联合唯一约束。
 
-`GET /benefit-order/{id}` 只允许当前成员查询自己的订单，用于确认异步落库状态。最终联调已经验证：接口返回订单 ID后，客户端轮询在 3 秒内查到订单，Redis 库存完成扣减，Stream 被消费者处理，MySQL 生成对应订单，数据库库存同步扣减。
+`GET /benefit-order/{id}` 只允许当前成员查询自己的状态 DTO。2026-07-22 联调验证了 `PENDING -> SUCCESS` 正常落库、`PENDING -> FAILED/COMPENSATED` 库存资格恢复，以及失联消费者毒消息接管并归档为 `DEAD_LETTER`；终态后主 Stream 和 Pending 均为 0。
 
 ## 13. Redis 数据结构总览
 
@@ -522,8 +525,11 @@ Consumer gy-benefit-order-consumer-{实例随机后缀}
 | `gy:cache:merchant:{id}` | String | 30 分钟 | 商户详情 JSON |
 | `gy:cache:merchant-category:list` | String | 3600 分钟 | 商户分类 JSON |
 | `gy:lock:merchant:{id}` | String | 10 秒 | 缓存重建互斥锁 |
+| `gy:limited-benefit:meta:{id}` | Hash | 无固定 TTL | 限时权益时间窗和启用状态 |
 | `gy:limited-benefit:stock:{id}` | String | 无固定 TTL | 限时权益库存 |
 | `gy:limited-benefit:order:{id}` | Set | 无固定 TTL | 该权益的领取成员集合 |
+| `gy:limited-benefit:request:{id}` | Hash | 无固定 TTL | 成员到订单 ID 的请求所有权 |
+| `gy:benefit-order:status:{orderId}` | Hash | 默认 168 小时 | 异步订单处理状态 |
 | `gy:post:liked:{postId}` | ZSet | 无固定 TTL | 点赞成员与点赞时间 |
 | `gy:feed:{memberId}` | ZSet | 无固定 TTL | 成员关注流收件箱 |
 | `gy:following:{memberId}` | Set | 无固定 TTL | 成员关注集合 |
@@ -531,7 +537,8 @@ Consumer gy-benefit-order-consumer-{实例随机后缀}
 | `gy:check-in:{memberId}:{yyyyMM}` | Bitmap | 无固定 TTL | 月度打卡状态 |
 | `gy:id:benefit-order:{date}` | String | 无固定 TTL | 分布式 ID 日计数器 |
 | `gy:stream:benefit-orders` | Stream | 无固定 TTL | 权益领取消息流 |
-| `gy:lock:benefit-order:{memberId}` | Redisson Lock | 看门狗/主动释放 | 权益订单成员锁 |
+| `gy:stream:benefit-orders:dlq` | Stream | 对账后删除 | 超过处理次数的死信 |
+| `gy:lock:benefit-order:{memberId}:{benefitId}` | Redisson Lock | 看门狗/主动释放 | 权益订单业务键锁 |
 
 Redis 在本项目中不是单纯缓存，而是承担了认证状态、业务索引、排序、集合运算、地理位置、时序状态、消息队列和并发控制等多类职责。
 
@@ -700,7 +707,7 @@ src/main/resources/db/gouyu.sql
 | `GOUYU_MYSQL_URL` | `jdbc:mysql://127.0.0.1:3306/gouyu?...` | MySQL URL |
 | `GOUYU_MYSQL_USERNAME` | `root` | MySQL 用户 |
 | `GOUYU_MYSQL_PASSWORD` | 空 | MySQL 密码 |
-| `GOUYU_REDIS_HOST` | `127.0.0.1` | Redis 地址 |
+| `GOUYU_REDIS_HOST` | `192.168.100.128` | Redis 地址 |
 | `GOUYU_REDIS_PORT` | `6379` | Redis 端口 |
 | `GOUYU_REDIS_PASSWORD` | 空 | Redis 密码 |
 | `GOUYU_IMAGE_UPLOAD_DIR` | 当前目录下 `web/assets` 的绝对路径 | 上传根目录 |
@@ -713,14 +720,12 @@ mysql -h 127.0.0.1 -u root -p < src/main/resources/db/gouyu.sql
 
 ### 18.3 Redis 初始化要求
 
-应用运行前应确保：
+应用运行前应确保 MySQL 与 Redis 可连接。以下状态均由应用幂等初始化或补齐：
 
-- 按分类把商户坐标写入 `gy:merchant:geo:{categoryId}`；
-- 把限时权益库存写入 `gy:limited-benefit:stock:{benefitId}`；
-- 创建 `gy:stream:benefit-orders`；
-- 创建消费组 `gy-benefit-order-group`。
-
-当前应用消费者假设 Stream 和消费组已经存在，不负责完整的自动建组流程。
+- 商户新增/更新同步 `gy:merchant:geo:{categoryId}`；
+- 启动时从 MySQL 补齐限时权益元数据和库存；
+- 创建 `gy:stream:benefit-orders` 与 `gy-benefit-order-group`；
+- 非破坏性创建 `gy_benefit_order_process` 表。
 
 ### 18.4 后端启动
 
@@ -775,6 +780,16 @@ target/gouyu-community-0.0.1-SNAPSHOT.jar
 - 后端成功连接 MySQL 和 Redis；
 - Maven 打包成功。
 
+2026-07-22 对限时权益可靠性改造追加验证：
+
+- Redis 6.2.6 Lua/Stream 测试 6 项全部通过，0 失败、0 跳过；
+- 正常领取由 `PENDING` 收敛为 `SUCCESS`，Redis/MySQL 库存同步扣减；
+- 数据库确定无库存时收敛为 `FAILED/COMPENSATED`，Redis 库存与资格恢复且 MySQL 无订单；
+- 模拟失联消费者持有的畸形 Pending 被 `XCLAIM` 接管，处理 2 次后进入死信，主 Stream 与 Pending 清零；
+- 死信对账后 Redis DLQ 清零，MySQL `gy_benefit_order_process` 保留 `DEAD_LETTER` 历史；
+- 通过 Nginx `/api` 完成登录、新增限时权益、领取和状态轮询，页面与代理均返回 HTTP 200；
+- 三轮隔离联调数据均按精确成员、权益、订单、消息 ID 和 Redis Key 清理。
+
 ### 19.2 覆盖的跨模块链路
 
 - 开发验证码返回、真实 Redis 验证码比对、一次性删除、成员自动创建、登录、资料保存、会话读取和登出；
@@ -798,7 +813,8 @@ target/gouyu-community-0.0.1-SNAPSHOT.jar
 5. 成员资料业务主键误用 `IdType.AUTO`，显式成员 ID 在插入时被忽略；现改为 `IdType.INPUT`。
 6. 商户新增/更新未同步 GEO、关注集合无法从 MySQL 重建、热门动态存在 N+1 查询等一致性和性能问题均已修复。
 7. 限时权益 Stream 依赖外部初始化、固定消费者名和延迟 AOP 代理初始化的问题已改为启动期幂等建组、实例唯一消费者和 `TransactionTemplate`。
-8. 上传匿名开放、路径规范化不足、前端错误拼接 `/imgs` 的问题已修复。
+8. 抢锁失败误 ACK、业务失败误 ACK、只处理当前消费者 Pending、毒消息阻塞、跨资源失败无补偿、Stream 增长和状态不完整，已通过显式处理结果、`XCLAIM`、有限重试、死信、所有权补偿、终态删除和状态 DTO 修复。
+9. 上传匿名开放、路径规范化不足、前端错误拼接 `/imgs` 的问题已修复。
 
 详细证据见 [前后端联调报告](api-integration-report.md) 和 [等价回归报告](regression-report.md)。
 
@@ -836,7 +852,7 @@ Redis Lua 原子判断、分布式 ID、Stream 异步削峰、消费者组、Pen
 ### 21.1 认证与权限
 
 - 验证码校验已恢复，但由于无法接入短信服务，开发模式会在响应中返回验证码；生产环境必须关闭 `GOUYU_EXPOSE_LOGIN_CODE` 并接入发送适配器。
-- 密码登录、登录后设置/修改密码和验证码重置密码已经实现；新密码为 8 至 20 位并使用 BCrypt，历史盐值 MD5 会在验证成功后升级。
+- 密码登录、登录后设置/修改密码和验证码重置密码已经实现；密码要求 8 至 20 位并使用 BCrypt 存储。
 - 商户、权益和上传写接口已要求登录，但没有管理员、商户或运营角色，尚不能做细粒度授权。
 - 会话改为 120 分钟空闲滑动期限和 7 天绝对期限，参数可通过环境变量调整。
 - 验证码发送和登录已增加 Redis 原子限流、验证码错误作废及账号失败锁定。
@@ -851,10 +867,12 @@ Redis Lua 原子判断、分布式 ID、Stream 异步削峰、消费者组、Pen
 
 ### 21.3 权益订单可靠性
 
-- 领取前已经校验有效期、自动恢复缺失的 Redis 库存，Stream/消费组由应用幂等初始化，消费者名带实例随机后缀，事务不再依赖延迟 AOP 代理。
-- API 仍在消息落库前返回订单 ID，但已经提供当前成员范围内的订单查询接口，前端会短轮询确认落库；尚未定义“处理中/失败”的持久化状态模型。
-- Stream 没有裁剪和归档策略，长期运行会持续增长。
-- 业务失败主要记录日志，缺少死信队列、告警和人工补偿机制。
+- 正常领取不查询 MySQL；Lua 原子处理时间窗、库存、资格、请求所有权、`PENDING` 状态和 Stream 投递，Redis 状态缺失时才从 MySQL 自愈。
+- 锁竞争和暂时异常不 ACK；组级 `XPENDING + XCLAIM` 可接管失联消费者消息，有限处理次数后原子转移死信并删除主 Stream 条目。
+- 数据库成功、确定失败补偿和死信迁移均有显式终态；Redis 状态 Hash、状态 DTO 和 `gy_benefit_order_process` 解决处理中、失败与历史归档问题。
+- Redis 与 MySQL 仍没有跨资源事务或 Outbox；当前以重试、数据库幂等检查和请求所有权补偿最终收敛，极端故障仍应增加定时对账。
+- 死信仍位于同一 Redis，尚缺 Pending 年龄、处理延迟、补偿与死信数量的指标告警、人工重放后台。
+- 单线程消费者吞吐有限；客户端也尚未提供幂等键，首次成功响应丢失后不能直接取回原订单 ID。
 
 ### 21.4 缓存与性能
 
@@ -894,14 +912,14 @@ Redis Lua 原子判断、分布式 ID、Stream 异步削峰、消费者组、Pen
 1. 接入短信服务，生产环境关闭验证码回显，并对接供应商发送结果与告警。
 2. 建立角色与权限模型，把“已登录可写”细化为管理员、商户和普通成员授权。
 3. 为上传增加文件签名校验、实际图片解码、恶意内容扫描、配额和对象存储。
-4. 为 Stream 增加死信、告警、重试上限、裁剪/归档和失败订单状态。
+4. 为 Stream、Pending、补偿和死信增加指标、告警与人工重放后台，并补充定时一致性对账。
 5. 把现有认证审计扩展到关键业务写操作，并增加全局接口限流、CSRF/滥用防护和安全响应头。
 6. 为敏感配置接入安全配置中心或密钥管理，不只依赖本机环境变量。
 
 ### P1：可靠性和一致性
 
 1. 为点赞、关注、GEO 和缓存双写设计补偿或消息驱动同步。
-2. 增加 Stream 死信、重试上限、监控、告警和裁剪策略。
+2. 评估 MySQL 受理表 + Outbox/CDC 或专业消息队列，作为更高可靠性等级的可选演进，而非当前必需依赖。
 3. 增加 Redis 数据重建脚本，支持从 MySQL 恢复 GEO、关注集合和限时库存。
 4. 为商户缓存选择明确的生产策略，并统一使用安全锁实现。
 5. 增加幂等键、业务错误码和全链路日志字段。
