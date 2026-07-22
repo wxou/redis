@@ -7,10 +7,12 @@ import com.gouyu.mapper.BenefitMapper;
 import com.gouyu.entity.LimitedBenefit;
 import com.gouyu.service.ILimitedBenefitService;
 import com.gouyu.service.IBenefitService;
-import com.gouyu.utils.RedisKeys;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.gouyu.service.LimitedBenefitRedisStateService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -24,13 +26,14 @@ import java.util.List;
  * @since 2021-12-22
  */
 @Service
+@Slf4j
 public class BenefitServiceImpl extends ServiceImpl<BenefitMapper, Benefit> implements IBenefitService {
 
     @Resource
     private ILimitedBenefitService claimLimitedBenefitService;
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    private LimitedBenefitRedisStateService limitedBenefitRedisStateService;
 
     @Override
     public ApiResult queryBenefitsOfMerchant(Long merchantId) {
@@ -59,7 +62,26 @@ public class BenefitServiceImpl extends ServiceImpl<BenefitMapper, Benefit> impl
         claimLimitedBenefit.setStartsAt(benefit.getStartsAt());
         claimLimitedBenefit.setEndsAt(benefit.getEndsAt());
         claimLimitedBenefitService.save(claimLimitedBenefit);
-        //保存限时权益信息到redis中
-        stringRedisTemplate.opsForValue().set(RedisKeys.LIMITED_BENEFIT_STOCK_KEY + benefit.getId(), benefit.getStock().toString());
+        // MySQL事务提交后再写Redis，避免数据库回滚时提前暴露权益。
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    syncLimitedBenefitState(claimLimitedBenefit);
+                }
+            });
+        } else {
+            syncLimitedBenefitState(claimLimitedBenefit);
+        }
+    }
+
+    private void syncLimitedBenefitState(LimitedBenefit limitedBenefit) {
+        try {
+            limitedBenefitRedisStateService.writeState(limitedBenefit, true);
+        } catch (RuntimeException e) {
+            // 数据库已提交，不能向调用方伪装成整体失败；领取时的缺失状态修复会再次同步。
+            log.error("限时权益已写入MySQL，但Redis状态同步失败，benefitId={}",
+                    limitedBenefit.getBenefitId(), e);
+        }
     }
 }

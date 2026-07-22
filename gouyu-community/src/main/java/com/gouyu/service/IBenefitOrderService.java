@@ -23,5 +23,4 @@ public interface IBenefitOrderService extends IService<BenefitOrder> {
 
     ApiResult queryOrder(Long orderId);
 
-    void createBenefitOrder(BenefitOrder benefitOrder);
 }

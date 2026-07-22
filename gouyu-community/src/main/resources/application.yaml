@@ -9,7 +9,7 @@ spring:
     username: ${GOUYU_MYSQL_USERNAME:root}
     password: ${GOUYU_MYSQL_PASSWORD:}
   redis:
-    host: ${GOUYU_REDIS_HOST:127.0.0.1}
+    host: ${GOUYU_REDIS_HOST:192.168.100.129}
     port: ${GOUYU_REDIS_PORT:6379}
     password: ${GOUYU_REDIS_PASSWORD:}
     lettuce:
@@ -50,3 +50,12 @@ gouyu:
     login-lock-minutes: ${GOUYU_AUTH_LOGIN_LOCK_MINUTES:15}
     audit-retention-days: ${GOUYU_AUTH_AUDIT_RETENTION_DAYS:180}
     initialize-audit-schema: ${GOUYU_AUTH_INITIALIZE_AUDIT_SCHEMA:true}
+  benefit-order:
+    status-ttl-hours: ${GOUYU_BENEFIT_ORDER_STATUS_TTL_HOURS:168}
+    max-retries: ${GOUYU_BENEFIT_ORDER_MAX_RETRIES:5}
+    claim-min-idle-millis: ${GOUYU_BENEFIT_ORDER_CLAIM_MIN_IDLE_MILLIS:30000}
+    claim-interval-millis: ${GOUYU_BENEFIT_ORDER_CLAIM_INTERVAL_MILLIS:10000}
+    claim-batch-size: ${GOUYU_BENEFIT_ORDER_CLAIM_BATCH_SIZE:20}
+    lock-wait-millis: ${GOUYU_BENEFIT_ORDER_LOCK_WAIT_MILLIS:200}
+    dead-letter-reconcile-interval-millis: ${GOUYU_BENEFIT_ORDER_DLQ_RECONCILE_INTERVAL_MILLIS:60000}
+    initialize-schema: ${GOUYU_BENEFIT_ORDER_INITIALIZE_SCHEMA:true}

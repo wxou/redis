@@ -1,34 +1,55 @@
----
--- 1.参数列表
--- 1.1 权益id
-local benefitId = ARGV[1]
--- 1.2 成员id
-local memberId = ARGV[2]
--- 1.3 权益记录id
-local benefitOrderId = ARGV[3]
+-- KEYS[1] 权益元数据Hash
+-- KEYS[2] Redis库存String
+-- KEYS[3] 已领取成员Set
+-- KEYS[4] 成员到订单ID的请求所有权Hash
+-- KEYS[5] 订单处理状态Hash
+-- KEYS[6] 订单Stream
+-- ARGV[1] memberId
+-- ARGV[2] orderId
+-- ARGV[3] 状态TTL秒数
+-- ARGV[4] 当前Epoch秒数
 
--- 2.数据key
--- 2.1 库存key
-local stockKey = "gy:limited-benefit:stock:" .. benefitId
--- 2.2 权益领取去重key
-local orderKey = "gy:limited-benefit:order:" .. benefitId
+local startsAt = tonumber(redis.call("hget", KEYS[1], "startsAt"))
+local endsAt = tonumber(redis.call("hget", KEYS[1], "endsAt"))
+local enabled = redis.call("hget", KEYS[1], "enabled")
+if (not startsAt or not endsAt or enabled ~= "1") then
+    return 3
+end
 
--- 3.脚本业务
--- 3.1 判断库存是否充足 get stockKey
-local stock = tonumber(redis.call("get", stockKey))
-if (not stock or stock <= 0) then
-    -- 3.1.1 库存不足，返回1
+local now = tonumber(ARGV[4])
+if (now < startsAt) then
+    return 4
+end
+if (now > endsAt) then
+    return 5
+end
+
+local stockValue = redis.call("get", KEYS[2])
+if (not stockValue) then
+    return 3
+end
+local stock = tonumber(stockValue)
+if (stock <= 0) then
     return 1
 end
--- 3.2 判断成员是否重复领取 sismember orderKey memberId
-if (redis.call("sismember", orderKey, memberId) == 1) then
-    -- 3.2.1 重复下单，返回2
+if (redis.call("sismember", KEYS[3], ARGV[1]) == 1) then
     return 2
 end
--- 3.3 扣减库存 incrby stockKey -1
-redis.call("incrby", stockKey, -1)
--- 3.4 记录已领取成员 sadd orderKey memberId
-redis.call("sadd", orderKey, memberId)
--- 3.5 发送消息到队列中，XADD gy:stream:benefit-orders * k1 v1 k2 v1 ...
-redis.call("xadd", "gy:stream:benefit-orders", "*", "memberId", memberId, "benefitId", benefitId, "id", benefitOrderId)
+
+redis.call("incrby", KEYS[2], -1)
+redis.call("sadd", KEYS[3], ARGV[1])
+redis.call("hset", KEYS[4], ARGV[1], ARGV[2])
+redis.call("hmset", KEYS[5],
+    "orderId", ARGV[2],
+    "memberId", ARGV[1],
+    "status", "PENDING",
+    "message", "领取请求已受理",
+    "retryCount", "0",
+    "updatedAt", tostring(now))
+redis.call("expire", KEYS[5], tonumber(ARGV[3]))
+redis.call("xadd", KEYS[6], "*",
+    "memberId", ARGV[1],
+    "benefitId", string.match(KEYS[2], "(%d+)$"),
+    "id", ARGV[2],
+    "acceptedAt", tostring(now))
 return 0

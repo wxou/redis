@@ -20,6 +20,14 @@ public class RedisKeys {
     public static final Long LOCK_MERCHANT_TTL = 10L;
 
     public static final String LIMITED_BENEFIT_STOCK_KEY = "gy:limited-benefit:stock:";
+    public static final String LIMITED_BENEFIT_META_KEY = "gy:limited-benefit:meta:";
+    public static final String LIMITED_BENEFIT_ORDER_KEY = "gy:limited-benefit:order:";
+    public static final String LIMITED_BENEFIT_REQUEST_KEY = "gy:limited-benefit:request:";
+    public static final String BENEFIT_ORDER_STATUS_KEY = "gy:benefit-order:status:";
+    public static final String BENEFIT_ORDER_STREAM_KEY = "gy:stream:benefit-orders";
+    public static final String BENEFIT_ORDER_DEAD_LETTER_STREAM_KEY = "gy:stream:benefit-orders:dlq";
+    public static final String BENEFIT_ORDER_STREAM_GROUP = "gy-benefit-order-group";
+    public static final String BENEFIT_ORDER_LOCK_KEY = "gy:lock:benefit-order:";
     public static final String POST_LIKED_KEY = "gy:post:liked:";
     public static final String FEED_KEY = "gy:feed:";
     public static final String FOLLOWING_KEY = "gy:following:";
