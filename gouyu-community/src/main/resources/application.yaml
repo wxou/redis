@@ -9,7 +9,7 @@ spring:
     username: ${GOUYU_MYSQL_USERNAME:root}
     password: ${GOUYU_MYSQL_PASSWORD:}
   redis:
-    host: ${GOUYU_REDIS_HOST:192.168.100.129}
+    host: ${GOUYU_REDIS_HOST:192.168.100.128}
     port: ${GOUYU_REDIS_PORT:6379}
     password: ${GOUYU_REDIS_PASSWORD:}
     lettuce:

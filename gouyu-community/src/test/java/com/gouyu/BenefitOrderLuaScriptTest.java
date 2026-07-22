@@ -1,6 +1,7 @@
 package com.gouyu;
 
 import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
 import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.Consumer;
 import io.lettuce.core.StreamMessage;
@@ -50,7 +51,12 @@ class BenefitOrderLuaScriptTest {
     void setUp() throws Exception {
         String host = System.getProperty("gouyu.test.redis.host", "127.0.0.1");
         int port = Integer.parseInt(System.getProperty("gouyu.test.redis.port", "6381"));
-        client = RedisClient.create("redis://" + host + ":" + port);
+        RedisURI.Builder redisUri = RedisURI.Builder.redis(host, port);
+        String password = System.getenv("GOUYU_REDIS_PASSWORD");
+        if (password != null && !password.trim().isEmpty()) {
+            redisUri.withPassword(password.toCharArray());
+        }
+        client = RedisClient.create(redisUri.build());
         connection = client.connect();
         redis = connection.sync();
         streamSupported = redis.info("server").matches("(?s).*redis_version:([5-9]|[1-9][0-9])\\..*");
